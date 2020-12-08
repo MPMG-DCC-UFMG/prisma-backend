@@ -1,0 +1,4 @@
+venv/
+old/
+node_modules/
+src/api/data
