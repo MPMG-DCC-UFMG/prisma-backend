@@ -21,6 +21,8 @@ const path = require('path');
   function getFilename(filename){
     filename = filename.split('\\');
     filename = filename[filename.length-1];
+    filename = filename.split('/');
+    filename = filename[filename.length-1];
     filename = filename.split('.').slice(0, -1).join('.');
     return filename;
   }
