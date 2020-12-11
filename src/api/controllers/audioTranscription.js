@@ -17,9 +17,9 @@ module.exports = (app) => {
 
     var config = {
       drivername: 'org.apache.phoenix.jdbc.PhoenixDriver',
-      url: 'jdbc:phoenix:hadoopmn-gsi-prod01.mpmg.mp.br,hadoopmn-gsi-prod02.mpmg.mp.br,hadoopmn-gsi-prod01.mpmg.mp.br:2181:/hbase-unsecure',
-      user: 'ufmg.f01dcc',
-      password: 'QmEBG@I3@bx',
+      url: 'jdbc:phoenix:hadoopmn-gsi-prod01.mpmg.mp.br:2181:/hbase-unsecure',
+      user: 'phoenixuser',
+      password: 'phoenixpassword',
       maxpoolsize: 100
     }
 
@@ -46,7 +46,8 @@ module.exports = (app) => {
                 err: err
               });
             } else {
-              statement.executeQuery("%jdbc(phoenix) select * from AUDIOWHATSHBASE;", function(err, resultset) {
+	      console.log(statement);
+              statement.executeQuery("select DISTINCT(TABLE_NAME) from SYSTEM.CATALOG;", function(err, resultset) {
                 if (err) {
                   return res.status(400).json({
                     local: "executeQuery",
