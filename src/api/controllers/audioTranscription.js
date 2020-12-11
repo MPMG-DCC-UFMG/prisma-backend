@@ -5,15 +5,15 @@ module.exports = (app) => {
 
   controller.getTranscriptions = (req, res) => {
 
-  var JDBC = require('jdbc');
-  var jinst = require('jdbc/lib/jinst');
+    var JDBC = require('jdbc');
+    var jinst = require('jdbc/lib/jinst');
 
-  if (!jinst.isJvmCreated()) {
-    jinst.addOption('-Xrs')
-    jinst.setupClasspath([
-      '/var/www/html/painelbi/software_anotacao_api/src/libs/phoenix-5.0.0.3.1.5.0-152-client.jar'
-    ])
-  }
+    if (!jinst.isJvmCreated()) {
+      jinst.addOption('-Xrs')
+      jinst.setupClasspath([
+        '/var/www/html/painelbi/software_anotacao_api/src/libs/phoenix-5.0.0.3.1.5.0-152-client.jar'
+      ])
+    }
 
     var config = {
       drivername: 'org.apache.phoenix.jdbc.PhoenixDriver',
@@ -31,64 +31,35 @@ module.exports = (app) => {
       }
 
       db.reserve(function (err, connObj) {
-	if (connObj) {
-           console.log("Using JDBC connection: " + connObj.conn);
-           var conn = connObj.conn;
 
-	conn.createStatement(function(err, statement) {
-		if (err) {
-			return res.status(400).json(err);
-		} else {
-			statement.executeQuery("select DISTINCT('TABLE_NAME') from SYSTEM.CATALOG;", function(err, resultset) {
-			if (err) {
-				return res.status(400).json(err);
-			} else {
-				// Convert the result set to an object array.
-				resultset.toObjArray(function(err, results) {
-					return res.status(200).json(results);
-				});
-			}
-		}
-	})
+        if (connObj) {
+          console.log("Using JDBC connection: " + connObj.conn);
+          var conn = connObj.conn;
+          conn.createStatement(function(err, statement) {
 
-	} else {
-	   return res.status(400).json(err);
+            if (err) {
+              return res.status(400).json(err);
+            } else {
+              statement.executeQuery("select DISTINCT('TABLE_NAME') from SYSTEM.CATALOG;", function(err, resultset) {
+                if (err) {
+                  return res.status(400).json(err);
+                } else {
+                  // Convert the result set to an object array.
+                  resultset.toObjArray(function(err, results) {
+                    return res.status(200).json(results);
+                  });
+                }
+              });
+            }
+          });
+
+        } else {
+          return res.status(400).json(err);
         }
+      
       });
 
     });
-
-    /*
-    client.version((error, version) => {
-      return res.status(200).json({
-        error: error, 
-        data: version
-      });
-    })
-    */
-
-    /*
-    client.tables((error, tables) => {
-      console.info(tables)
-      return res.status(200).json({
-        error: error, 
-        tables: tables
-      });
-    })
-    */
-
-    /*client
-      .table('AUDIOWHATSHBASE')
-      .schema((error, data) => {
-        console.info(data)
-        return res.status(200).json({
-          error: error, 
-          data: data
-        });
-    })
-    */
-
-    
 
   }
   
