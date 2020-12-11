@@ -18,8 +18,8 @@ module.exports = (app) => {
     var config = {
       drivername: 'org.apache.phoenix.jdbc.PhoenixDriver',
       url: 'jdbc:phoenix:hadoopmn-gsi-prod01.mpmg.mp.br,hadoopmn-gsi-prod02.mpmg.mp.br,hadoopmn-gsi-prod01.mpmg.mp.br:2181:/hbase-unsecure',
-      user: 'ufmg.rdenubila',
-      password: 'Rdg085055147',
+      user: 'ufmg.f01dcc',
+      password: 'QmEBG@I3@bx',
       maxpoolsize: 100
     }
 
@@ -27,7 +27,10 @@ module.exports = (app) => {
 
     db.initialize(function(err) {
       if (err) {
-        return res.status(400).json(err);
+        return res.status(400).json({
+          local: "initialize",
+          err: err
+        });
       }
 
       db.reserve(function (err, connObj) {
@@ -38,11 +41,17 @@ module.exports = (app) => {
           conn.createStatement(function(err, statement) {
 
             if (err) {
-              return res.status(400).json(err);
+              return res.status(400).json({
+                local: "createStatement",
+                err: err
+              });
             } else {
               statement.executeQuery("select DISTINCT('TABLE_NAME') from SYSTEM.CATALOG;", function(err, resultset) {
                 if (err) {
-                  return res.status(400).json(err);
+                  return res.status(400).json({
+                    local: "executeQuery",
+                    err: err
+                  });
                 } else {
                   // Convert the result set to an object array.
                   resultset.toObjArray(function(err, results) {
@@ -54,7 +63,10 @@ module.exports = (app) => {
           });
 
         } else {
-          return res.status(400).json(err);
+          return res.status(400).json({
+            local: "reserve",
+            err: err
+          });
         }
       
       });
