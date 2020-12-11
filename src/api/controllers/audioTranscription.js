@@ -46,7 +46,7 @@ module.exports = (app) => {
                 err: err
               });
             } else {
-              statement.executeQuery("select DISTINCT('TABLE_NAME') from SYSTEM.CATALOG;", function(err, resultset) {
+              statement.executeQuery("select * from AUDIOWHATSHBASE;", function(err, resultset) {
                 if (err) {
                   return res.status(400).json({
                     local: "executeQuery",
