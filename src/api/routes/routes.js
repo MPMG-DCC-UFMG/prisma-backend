@@ -8,6 +8,9 @@ module.exports = (app) => {
     app.route("/api/v1/entity").post(entities.editEntity);
     
     app.route("/api/v1/audioTranscriptions").get(audioTranscription.getTranscriptions);
+    app.route("/api/v1/audioTranscription").get(audioTranscription.getTranscription);
+    app.route("/api/v1/audioTranscription").post(audioTranscription.saveTranscription);
+    app.route("/api/v1/audio").get(audioTranscription.getAudio);
 
   };
   

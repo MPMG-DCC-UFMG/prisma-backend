@@ -1,79 +1,71 @@
-
 module.exports = (app) => {
 
+  const druid = app.services.druid;
+  const hdfs = app.services.hdfs;
   const controller = {};
 
-  controller.getTranscriptions = (req, res) => {
+  controller.getTranscriptions = async(req, res) => {
 
-    var JDBC = require('jdbc');
-    var jinst = require('jdbc/lib/jinst');
+    const dataSource = "transcricao_audio";
+    let interval = await druid.timeBoundary(dataSource);
 
-    if (!jinst.isJvmCreated()) {
-      jinst.addOption('-Xrs')
-      jinst.setupClasspath([
-        '/var/www/html/painelbi/software_anotacao_api/src/libs/phoenix-5.0.0.3.1.5.0-152-client.jar'
-      ])
+    let resultados = await druid.scan(dataSource, interval, {});
+
+    for(let i=0; i<resultados.length; i++){
+      resultados[i].tem_correcoes = (await hdfs.fileStatus(resultados[i].hdfs_path+".json")) ? true : false;
     }
 
-    var config = {
-      drivername: 'org.apache.phoenix.jdbc.PhoenixDriver',
-      url: 'jdbc:phoenix:hadoopmn-gsi-prod01.mpmg.mp.br:2181:/hbase-unsecure',
-      user: 'phoenixuser',
-      password: 'phoenixpassword',
-      maxpoolsize: 100
-    }
+    res.status(200).json(resultados);
 
-    var db = new JDBC(config);
+  }
 
-    db.initialize(function(err) {
-      if (err) {
-        return res.status(400).json({
-          local: "initialize",
-          err: err
-        });
+  controller.getTranscription = async(req, res) => {
+
+    const dataSource = "transcricao_audio";
+    let interval = await druid.timeBoundary(dataSource);
+
+    let resultados = await druid.scan(dataSource, interval, {
+      filter: {
+        "type": "selector",
+        "dimension": "hdfs_path",
+        "value": req.query.file,
       }
-
-      db.reserve(function (err, connObj) {
-
-        if (connObj) {
-          console.log("Using JDBC connection: " + connObj.conn);
-          var conn = connObj.conn;
-          conn.createStatement(function(err, statement) {
-
-            if (err) {
-              return res.status(400).json({
-                local: "createStatement",
-                err: err
-              });
-            } else {
-	      console.log(statement);
-              statement.executeQuery("select DISTINCT(TABLE_NAME) from SYSTEM.CATALOG;", function(err, resultset) {
-                if (err) {
-                  return res.status(400).json({
-                    local: "executeQuery",
-                    err: err
-                  });
-                } else {
-                  // Convert the result set to an object array.
-                  resultset.toObjArray(function(err, results) {
-                    return res.status(200).json(results);
-                  });
-                }
-              });
-            }
-          });
-
-        } else {
-          return res.status(400).json({
-            local: "reserve",
-            err: err
-          });
-        }
-      
-      });
-
     });
 
+    let data = await hdfs.getFile(req.query.file+".json").catch(err=>{
+      res.status(400).json(err);
+    });
+    
+    res.status(200).json({
+      transcricao: resultados[0],
+      correcoes: data || []
+    });
+  }
+
+  controller.saveTranscription = async(req, res) => {
+
+    
+    let data = await hdfs.saveFile(req.query.file+".json", req.body.data).catch(err=>{
+      res.status(400).json("ERRO: " + err);
+    });
+    
+    res.status(200).json(data);
+    
+  }
+
+  controller.getAudio = async(req, res) => {
+
+    let arquivos = await hdfs.listFolder(req.query.file);
+    let filename = arquivos.FileStatuses.FileStatus[0].pathSuffix;
+
+    let data = await hdfs.getAudioUrl(req.query.file+"/"+filename)
+    .catch(err=>{
+      res.status(400).json(err);
+    });
+    
+    res.status(200).json({
+      url: data
+    });
   }
   
   return controller;
