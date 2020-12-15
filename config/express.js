@@ -1,6 +1,7 @@
+require('dotenv').config();
+
 const express = require("express");
 const bodyParser = require("body-parser");
-const config = require("config");
 const cors = require("cors");
 const consign = require("consign");
 
@@ -12,7 +13,7 @@ const helmet = require('helmet');
 
 module.exports = () => {
   const app = express();
-  const port = process.env.PORT || config.get("server.port");
+  const port = process.env.PORT || 7000;
 
   app.set("port", port);
 

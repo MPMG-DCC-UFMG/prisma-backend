@@ -1,9 +1,11 @@
+require('dotenv').config();
+
 module.exports = (app) => {
 
     var Druid = require('druid-query')
         , Client = Druid.Client
         , Query = Druid.Query
-        , client = new Client('http://127.0.0.1:8082')
+        , client = new Client(process.env.DRUID_URL)
 
     const timeBoundary = (dataSource) => {
 

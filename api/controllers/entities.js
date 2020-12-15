@@ -1,3 +1,4 @@
+require('dotenv').config();
 
 module.exports = (app) => {
 
@@ -27,7 +28,7 @@ const path = require('path');
     return filename;
   }
 
-  const testFolder = './api/data';
+  const testFolder = process.env.ENTITIES_PATH;
   const controller = {};
 
   controller.getEntities = async (req, res) => {

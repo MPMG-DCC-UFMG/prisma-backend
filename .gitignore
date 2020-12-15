@@ -3,3 +3,4 @@ old/
 node_modules/
 api/data
 libs
+.env
