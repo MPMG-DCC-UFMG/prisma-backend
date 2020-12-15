@@ -1,5 +1,5 @@
 venv/
 old/
 node_modules/
-src/api/data
-src/libs
+api/data
+libs
