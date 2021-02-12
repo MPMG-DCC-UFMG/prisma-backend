@@ -25,8 +25,6 @@ module.exports = (app) => {
                 console.log(err);
                 if(err.response && err.response.status==307){
 
-                    console.log(err.response.headers.location);
-
                     console.log(process.env.HDFS_USING_TUNNEL);
 
                     if(process.env.HDFS_USING_TUNNEL=="true"){
@@ -43,7 +41,7 @@ module.exports = (app) => {
                         
                         resolve(getURL(port)+url[1]);
                     } else {
-                        result(err.response.headers.location);
+                        resolve(err.response.headers.location);
                     }
                 } else {
                     resolve(null);

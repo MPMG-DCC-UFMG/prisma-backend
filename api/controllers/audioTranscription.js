@@ -6,8 +6,15 @@ module.exports = (app) => {
 
   controller.getTranscriptions = async(req, res) => {
 
+    
     const dataSource = "transcricao_audio";
-    let interval = await druid.timeBoundary(dataSource);
+    let interval;
+
+    try {
+      interval = await druid.timeBoundary(dataSource);
+    } catch(err) {
+      res.status(400).json(err);
+    }
 
     let resultados = await druid.scan(dataSource, interval, {});
 
@@ -55,9 +62,16 @@ module.exports = (app) => {
 
   controller.getAudio = async(req, res) => {
 
-    let arquivos = await hdfs.listFolder(req.query.file);
+    let arquivos;
+    
+    try {
+      arquivos = await hdfs.listFolder(req.query.file);
+    } catch(err) {
+      res.status(400).json(err);
+    }
+    
     let filename = arquivos.FileStatuses.FileStatus[0].pathSuffix;
-
+    
     let data = await hdfs.getAudioUrl(req.query.file+"/"+filename)
     .catch(err=>{
       res.status(400).json(err);
