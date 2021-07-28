@@ -5,7 +5,8 @@ var router = express.Router({ mergeParams: true });
 
 router.get("/", async (req: any, res: any) => {
   User.findAll({
-    attributes: ['id', 'name', 'email', 'role', 'createdAt']
+    attributes: ['id', 'name', 'email', 'role', 'active', 'createdAt'],
+    order: [['name', 'ASC']]
   }).then(data => res.json(data))
     .catch(error => res.status(400).json(error))
 });
@@ -15,7 +16,8 @@ router.get('/:id', (req: any, res: any) => {
   const id = req.params.id=="me" ? req.user.id : req.params.id;
 
   User.findOne({
-      where: {id: id}
+      where: {id: id},
+      attributes: {exclude: ['password']}
   })
       .then(data => res.status(data ? 200 : 404).json(data))
       .catch(error => res.status(400).json(error))

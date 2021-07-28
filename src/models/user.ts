@@ -30,6 +30,10 @@ const User = DbConnector.sequelize().define('user', {
     role: {
         type: DataTypes.ENUM('user', 'admin'),
         defaultValue: 'user'
+    },
+    active: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
     }
 }, {
   // Other model options go here
@@ -42,11 +46,11 @@ User.beforeCreate( async(user: any, options) => {
 
 User.beforeUpdate( async(user: any, options) => {
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(user.password, salt);
+    if(user.changed('password')) user.password = await bcrypt.hash(user.password, salt);
 });
 
 (async () => {
-    await User.sync();
+    await User.sync({alter: true});
 })();
 
 export default User;

@@ -18,6 +18,10 @@ router.post('/login', async (req: any, res: any) => {
 
     try {
         const user: any = await User.findOne({where: {email: body.email}});
+
+        if(!user.active) 
+            res.status(400).json({ error: "Usuário inativo. Solicite a ativação do seu cadastro à administração." });
+
         const validPassword = await bcrypt.compare(body.password, user.password);
         if (validPassword) {
             const token = generateAccessToken({
@@ -31,13 +35,25 @@ router.post('/login', async (req: any, res: any) => {
                 access_token: token
             });
         } else {
-            res.status(400).json({ error: "Invalid Password" });
+            res.status(400).json({ error: "Usuário e/ou senha inválidos" });
         }
         
     } catch {
-        res.status(400).json({ error: "User not found" });
+        res.status(400).json({ error: "Usuário e/ou senha inválidos" });
     }
 
+});
+
+router.post('/register', async (req: any, res: any) => { 
+    const body = req.body;
+
+    if (!(body.email && body.password && body.name)) {
+    return res.status(400).send({ error: "Data not formatted properly" });
+    }
+
+    User.create(body)
+        .then(data => res.json(data))
+        .catch(error => res.status(400).json(error))
 });
 
 module.exports = router;
