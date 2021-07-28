@@ -21,8 +21,7 @@ router.get('/', (req: any, res: any) => {
             as: "users",
             attributes: ["id", "name"],
             through: {attributes: []}
-        }],
-        logging: console.log
+        }]
     }).then(data => res.json( filterResult(req, data) )
     ).catch(error => res.status(400).json(error))
 });
