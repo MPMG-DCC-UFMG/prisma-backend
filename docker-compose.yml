@@ -1,0 +1,27 @@
+version: '3.1'
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: software_anotacao
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  sox:
+    image: ubuntu
+    container_name: sox-container
+    command: >
+      sh -c "apt-get update -y 
+      && apt-get install -y sox libsox-fmt-mp3
+      && tail -f /dev/null"
+    working_dir: /files
+    volumes:
+      - ./public/files:/files
+    ports:
+      - 508:508
