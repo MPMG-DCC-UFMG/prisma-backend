@@ -2,38 +2,25 @@ import fs from 'fs';
 const express = require('express');
 const router = express.Router({ mergeParams: true });
 const slugify = require('slugify')
-const Lame = require("node-lame").Lame;
 const FileType = require('file-type');
 const uploadPath = require('path').resolve('./') + '/public/files/';
+const { exec } = require("child_process");
 
 const toMp3 = async (filename: string) => {
 
-    const file = `${uploadPath}${filename}`;
-    const fileType = await FileType.fromFile(file);
+    const file = `${filename}`;
+    const fileType = await FileType.fromFile(`./public/files/${file}`);
 
-    console.log(fileType);
 
     const toConvert:string[] = ["audio/ogg", "audio/wav", "audio/vnd.wave", "audio/webm"];
 
     if(toConvert.includes(fileType.mime)) {
 
         const newFile = file.replace(fileType.ext, "mp3");
-
         console.log(newFile);
 
-        const encoder = new Lame({
-            output: newFile,
-            bitrate: 192,
-        }).setFile(file);
-
-        const emitter = encoder.getEmitter();
-
-        emitter.on("progress", (progress: any) => {
-            console.log(progress);
-        });
-        
         try {
-            await encoder.encode();
+            exec(`docker exec sox-container sox ${file} ${newFile}`, (error:any, stdout:any, stderr:any) => {});
         } catch (error) {
             throw error;
         }

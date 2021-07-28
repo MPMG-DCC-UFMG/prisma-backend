@@ -2,7 +2,6 @@ import AudioSegment from "../models/audio_segment";
 import AudioSegmentRevision from "../models/audio_segment_revision";
 import AudioTranscription from "../models/audio_transcription";
 import User from "../models/user";
-var sox = require('sox-audio');
 const { exec } = require("child_process");
 
 var express = require('express');
@@ -17,8 +16,6 @@ router.get('/', (req: any, res: any) => {
 });
 
 router.post('/', async(req: any, res: any) => { 
-
-    console.log(uploadPath+req.body.file);
 
     mp3Duration(uploadPath+req.body.file, async (err: any, duration: number) => {
         
