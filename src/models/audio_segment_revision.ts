@@ -40,10 +40,15 @@ const AudioSegmentRevision = DbConnector.sequelize().define('audio_segment_revis
     revision: {
         type: DataTypes.STRING,
         allowNull: false
+    },
+    approved: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
     }
     
 }, {
   // Other model options go here
+  paranoid: true
 });
 
 AudioSegmentRevision.belongsTo(Project, {foreignKey: "project_id"});
@@ -52,7 +57,7 @@ AudioSegmentRevision.belongsTo(User, {foreignKey: "user_id"});
 AudioSegment.hasMany(AudioSegmentRevision, {foreignKey: "audio_segment_id", as: "revisions"});
 
 (async () => {
-    await AudioSegmentRevision.sync();
+    await AudioSegmentRevision.sync({alter: true});
 })();
 
 export default AudioSegmentRevision;

@@ -1,13 +1,15 @@
 import Model from "../models/project";
 import ProjectUser from "../models/project_user";
 import User from "../models/user";
+import { RolesService } from "../services/rolesService";
 
 var express = require('express');
 var router = express.Router({ mergeParams: true });
 
 const filterResult = (req:any, data:any) => {
-    if(req.user.role==='admin') return data;
+    if(RolesService.isRoot(req.user.role)) return data;
     return  data.filter((project: any) => 
+                    project.user_id == req.body.user_id || 
                     project.users.some((user: any) => 
                         user.id === req.body.user_id
                     )
@@ -55,8 +57,7 @@ router.put('/:id', (req: any, res: any) => {
 });
 
 router.delete('/:id', (req: any, res: any) => { 
-    Model.findOne({where: req.params}).then(data => {
-        data?.destroy();
+    Model.destroy({where: req.params}).then(data => {
         res.send();
     })
 });

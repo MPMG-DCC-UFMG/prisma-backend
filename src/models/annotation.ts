@@ -44,13 +44,14 @@ const Annotation = DbConnector.sequelize().define('annotation', {
     }
 }, {
   // Other model options go here
+  paranoid: true
 });
 
 Sentence.hasMany(Annotation, {foreignKey: "sentence_id"});
 
 
 (async () => {
-    await Annotation.sync();
+    await Annotation.sync({alter: true});
 })();
 
 

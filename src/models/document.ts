@@ -25,12 +25,13 @@ const Document = DbConnector.sequelize().define('document', {
     
 }, {
   // Other model options go here
+  paranoid: true
 });
 
 Document.belongsTo(Project, {foreignKey: "project_id"});
 
 (async () => {
-    await Document.sync();
+    await Document.sync({alter: true});
 })();
 
 

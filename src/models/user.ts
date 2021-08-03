@@ -28,7 +28,7 @@ const User = DbConnector.sequelize().define('user', {
         allowNull: false,
     },
     role: {
-        type: DataTypes.ENUM('user', 'admin'),
+        type: DataTypes.STRING,
         defaultValue: 'user'
     },
     active: {
@@ -37,6 +37,7 @@ const User = DbConnector.sequelize().define('user', {
     }
 }, {
   // Other model options go here
+  paranoid: true
 });
 
 User.beforeCreate( async(user: any, options) => {
@@ -46,7 +47,8 @@ User.beforeCreate( async(user: any, options) => {
 
 User.beforeUpdate( async(user: any, options) => {
     const salt = await bcrypt.genSalt(10);
-    if(user.changed('password')) user.password = await bcrypt.hash(user.password, salt);
+    if(user.changed('password')) 
+        user.password = await bcrypt.hash(user.password, salt);
 });
 
 (async () => {

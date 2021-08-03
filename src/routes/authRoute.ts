@@ -20,7 +20,7 @@ router.post('/login', async (req: any, res: any) => {
         const user: any = await User.findOne({where: {email: body.email}});
 
         if(!user.active) 
-            res.status(400).json({ error: "Usuário inativo. Solicite a ativação do seu cadastro à administração." });
+            res.status(400).json({ error: "Seu cadastro encontra-se em aprovação. Solicite ao administrador do sistema a ativação do seu cadastro" });
 
         const validPassword = await bcrypt.compare(body.password, user.password);
         if (validPassword) {

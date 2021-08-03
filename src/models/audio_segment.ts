@@ -31,6 +31,10 @@ const AudioSegment = DbConnector.sequelize().define('audio_segment', {
         type: DataTypes.STRING,
         allowNull: false
     },
+    full_audio: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
     start_time: {
         type: DataTypes.INTEGER,
         allowNull: true
@@ -42,13 +46,14 @@ const AudioSegment = DbConnector.sequelize().define('audio_segment', {
     
 }, {
   // Other model options go here
+  paranoid: true
 });
 
 AudioSegment.belongsTo(Project, {foreignKey: "project_id"});
 AudioTranscription.hasMany(AudioSegment, {foreignKey: "audio_transcription_id", as: "segments"});
 
 (async () => {
-    await AudioSegment.sync();
+    await AudioSegment.sync({alter: true});
 })();
 
 export default AudioSegment;

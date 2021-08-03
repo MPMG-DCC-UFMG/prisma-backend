@@ -29,7 +29,8 @@ router.post('/', async(req: any, res: any) => {
             audio_transcription_id: at.id,
             file: at.file,
             start_time: 0,
-            end_time: at.total_time
+            end_time: at.total_time,
+            full_audio: true
         })
 
         res.json({
@@ -45,10 +46,10 @@ router.get('/:id', (req: any, res: any) => {
         include: [{
             model: AudioSegment,
             as: "segments",
-            attributes: ["id", "file", "start_time", "end_time"],
+            attributes: ["id", "file", "start_time", "end_time", "full_audio"],
             include: [{
                 model: AudioSegmentRevision,
-                attributes: ["id", "user_id", "revision", "createdAt", "updatedAt"],
+                attributes: ["id", "user_id", "revision", "approved", "createdAt", "updatedAt"],
                 as: "revisions",
                 include: [{
                     model: User,
@@ -109,6 +110,30 @@ router.post('/:id/segment', async (req: any, res: any) => {
 
     res.json(data);
     
+});
+
+router.post('/:id/segment/merge', async (req: any, res: any) => { 
+
+    const data = await AudioSegment.findAll({
+        where: { id: req.body.segment_ids },
+        include: [{
+            model: AudioSegmentRevision,
+            attributes: ["id", "user_id", "revision", "approved", "createdAt", "updatedAt"],
+            where: {approved: true},
+            as: "revisions"
+        }]
+    });
+    
+    res.json(data);
+    
+});
+
+
+router.delete('/:audio_transcription_id/segment/:id', (req: any, res: any) => { 
+    AudioSegment.findOne({where: req.params}).then(data => {
+        data?.destroy();
+        res.send();
+    })
 });
 
 

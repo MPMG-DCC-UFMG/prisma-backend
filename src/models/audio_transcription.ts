@@ -27,6 +27,10 @@ const AudioTranscription = DbConnector.sequelize().define('audio_transcription',
         type: DataTypes.STRING,
         allowNull: false
     },
+    allow_download: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
     total_time: {
         type: DataTypes.INTEGER,
         allowNull: false
@@ -35,16 +39,29 @@ const AudioTranscription = DbConnector.sequelize().define('audio_transcription',
         type: DataTypes.STRING,
         allowNull: false,
         defaultValue: "created"
+    },
+    is_merge: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    merge_ids: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    merge_times: {
+        type: DataTypes.STRING,
+        allowNull: true
     }
     
 }, {
   // Other model options go here
+  paranoid: true
 });
 
 AudioTranscription.belongsTo(Project, {foreignKey: "project_id"});
 
 (async () => {
-    await AudioTranscription.sync();
+    await AudioTranscription.sync({alter: true});
 })();
 
 export default AudioTranscription;

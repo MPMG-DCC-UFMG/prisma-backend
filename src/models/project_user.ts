@@ -35,6 +35,11 @@ Project.belongsToMany(User, {
     as: "users"
 });
 
+User.belongsToMany(Project, { 
+    through: ProjectUser, 
+    as: "projects"
+});
+
 (async () => {
     await ProjectUser.sync();
 })();

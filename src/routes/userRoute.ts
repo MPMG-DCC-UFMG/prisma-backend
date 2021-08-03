@@ -1,3 +1,4 @@
+import Project from "../models/project";
 import User from "../models/user";
 
 var express = require('express');
@@ -17,7 +18,13 @@ router.get('/:id', (req: any, res: any) => {
 
   User.findOne({
       where: {id: id},
-      attributes: {exclude: ['password']}
+      attributes: {exclude: ['password']},
+      include: [{
+        model: Project,
+        as: "projects",
+        attributes: ["id", "name", "color", "icon"],
+        through: { attributes: [] }
+    }]
   })
       .then(data => res.status(data ? 200 : 404).json(data))
       .catch(error => res.status(400).json(error))

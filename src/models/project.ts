@@ -44,14 +44,19 @@ const Project = DbConnector.sequelize().define('projects', {
     },
     icon: {
         type: DataTypes.STRING
+    },
+    open: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true
     }
 }, {
   // Other model options go here
+  paranoid: true
 });
 
 
 (async () => {
-    await Project.sync();
+    await Project.sync({alter: true});
 })();
 
 
