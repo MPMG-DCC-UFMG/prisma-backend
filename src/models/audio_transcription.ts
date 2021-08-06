@@ -39,18 +39,6 @@ const AudioTranscription = DbConnector.sequelize().define('audio_transcription',
         type: DataTypes.STRING,
         allowNull: false,
         defaultValue: "created"
-    },
-    is_merge: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
-    },
-    merge_ids: {
-        type: DataTypes.STRING,
-        allowNull: true
-    },
-    merge_times: {
-        type: DataTypes.STRING,
-        allowNull: true
     }
     
 }, {

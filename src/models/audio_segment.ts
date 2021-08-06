@@ -42,7 +42,15 @@ const AudioSegment = DbConnector.sequelize().define('audio_segment', {
     end_time: {
         type: DataTypes.INTEGER,
         allowNull: true
-    }
+    },
+    is_merge: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    merge_data: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
     
 }, {
   // Other model options go here

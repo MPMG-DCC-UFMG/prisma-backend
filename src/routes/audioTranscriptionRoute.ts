@@ -1,9 +1,10 @@
+import { startsWith } from "lodash";
 import AudioSegment from "../models/audio_segment";
 import AudioSegmentRevision from "../models/audio_segment_revision";
 import AudioTranscription from "../models/audio_transcription";
 import User from "../models/user";
 const { exec } = require("child_process");
-
+var fs = require('fs');
 var express = require('express');
 var router = express.Router({ mergeParams: true });
 const uploadPath = require('path').resolve('./') + '/public/files/';
@@ -33,6 +34,18 @@ router.post('/', async(req: any, res: any) => {
             full_audio: true
         })
 
+        if(req.body.txt) {
+            const txt = fs.readFileSync(uploadPath+req.body.txt, 'utf8');
+
+            const newRevision = await AudioSegmentRevision.create({
+                project_id: at.project_id,
+                audio_transcription_id: at.id,
+                audio_segment_id: as.id,
+                user_id: req.body.user_id,
+                revision: txt
+            })
+        }
+
         res.json({
             audioTranscription: at,
             audioSegment: as
@@ -46,7 +59,7 @@ router.get('/:id', (req: any, res: any) => {
         include: [{
             model: AudioSegment,
             as: "segments",
-            attributes: ["id", "file", "start_time", "end_time", "full_audio"],
+            attributes: ["id", "file", "start_time", "end_time", "full_audio", "is_merge", "merge_data"],
             include: [{
                 model: AudioSegmentRevision,
                 attributes: ["id", "user_id", "revision", "approved", "createdAt", "updatedAt"],
@@ -112,21 +125,85 @@ router.post('/:id/segment', async (req: any, res: any) => {
     
 });
 
+router.put('/:audio_transcription_id/segment/:id', async (req: any, res: any) => { 
+
+    let audio:any = await AudioTranscription.findOne({where: {id: req.params.audio_transcription_id}});
+    if(!audio) res.status(400).send();
+
+    if(req.body.start_time!=null && req.body.end_time!=null) {
+        const start = req.body.start_time;
+        const end = req.body.end_time;
+        const duration = end-start;
+
+        const newFile = audio.file.replace(`.mp3`, `-segment-${start}-${end}.mp3`);
+
+        req.body.file = newFile;
+
+        exec(`docker exec sox-container sox ${audio.file} ${newFile} trim ${start} ${duration}`, (error:any, stdout:any, stderr:any) => {});
+    }
+    
+    AudioSegment.findOne({where: req.params}).then(data => {
+        data?.update(req.body)
+            .then(data => res.json(data))
+            .catch(error => res.status(400).json(error))
+    })
+});
+
 router.post('/:id/segment/merge', async (req: any, res: any) => { 
 
-    const data = await AudioSegment.findAll({
+    const audio: any = await AudioTranscription.findOne({ where: { id: req.params.id } })
+    
+    const data: any = await AudioSegment.findAll({
         where: { id: req.body.segment_ids },
         include: [{
             model: AudioSegmentRevision,
             attributes: ["id", "user_id", "revision", "approved", "createdAt", "updatedAt"],
             where: {approved: true},
+            limit: 1,
             as: "revisions"
         }]
     });
     
-    res.json(data);
+    const revisions: string[] = data.map( (d: any) => d.revisions[0].revision );
+    const starts: number[] = data.map( (d: any) => d.start_time );
+    const ends: number[] = data.map( (d: any) => d.end_time );
+    const files: string[] = data.map( (d: any) => d.file );
+
+    const newFile = audio.file.replace(`.mp3`, `-merge-${joinMultipleTimes(starts, ends, '-')}.mp3`);
+    exec(`docker exec sox-container sox ${files.join(" ")} ${newFile}`, (error:any, stdout:any, stderr:any) => {});
+
+    const newSegment: any = await AudioSegment.create({
+        project_id: req.params.project_id,
+        audio_transcription_id: audio?.id,
+        file: newFile,
+        start_time: Math.min(...starts),
+        end_time: Math.max(...ends),
+        is_merge: true,
+        merge_data: JSON.stringify(data.map( (d: any) => ({id: d.id, start_time: d.start_time, end_time: d.end_time })))
+    });
+
+    const newRevision = await AudioSegmentRevision.create({
+        audio_transcription_id: audio.id,
+        project_id: audio.project_id,
+        audio_segment_id: newSegment.id,
+        user_id: req.body.user_id,
+        revision: revisions.join(" ")
+    })
+    
+    res.json({
+        newSegment,
+        newRevision
+    });
     
 });
+
+const joinMultipleTimes = (starts: number[], ends: number[], separator: string): string => {
+    let res = [];
+    for(let i:number = 0; i<starts.length; i++) {
+        res.push(`${starts[i]}${separator}${ends[i]}`);
+    }
+    return res.join(separator);
+}
 
 
 router.delete('/:audio_transcription_id/segment/:id', (req: any, res: any) => { 
@@ -144,7 +221,9 @@ router.post('/:audio_transcription_id/segment/:audio_segment_id/revision', async
 });
 
 router.put('/:audio_transcription_id/segment/:audio_segment_id/revision/:id', async (req: any, res: any) => { 
+    console.log(req.params);
     AudioSegmentRevision.findOne({where: req.params}).then(data => {
+        if(!data) res.sendStatus(404);
         data?.update(req.body)
             .then(data => res.json(data))
             .catch(error => res.status(400).json(error))

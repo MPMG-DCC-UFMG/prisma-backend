@@ -11,10 +11,11 @@ const toMp3 = async (filename: string) => {
     const file = `${filename}`;
     const fileType = await FileType.fromFile(`./public/files/${file}`);
 
+    console.log(fileType);
 
     const toConvert:string[] = ["audio/ogg", "audio/wav", "audio/vnd.wave", "audio/webm"];
 
-    if(toConvert.includes(fileType.mime)) {
+    if(fileType && toConvert.includes(fileType.mime)) {
 
         const newFile = file.replace(fileType.ext, "mp3");
         console.log(newFile);
