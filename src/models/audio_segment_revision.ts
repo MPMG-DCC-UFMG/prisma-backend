@@ -55,6 +55,7 @@ AudioSegmentRevision.belongsTo(Project, {foreignKey: "project_id"});
 AudioSegmentRevision.belongsTo(AudioTranscription, {foreignKey: "audio_transcription_id"});
 AudioSegmentRevision.belongsTo(User, {foreignKey: "user_id"});
 AudioSegment.hasMany(AudioSegmentRevision, {foreignKey: "audio_segment_id", as: "revisions"});
+AudioTranscription.hasMany(AudioSegmentRevision, {foreignKey: "audio_transcription_id", as: "revisions"});
 
 (async () => {
     await AudioSegmentRevision.sync({alter: true});

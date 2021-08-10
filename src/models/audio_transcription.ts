@@ -27,10 +27,6 @@ const AudioTranscription = DbConnector.sequelize().define('audio_transcription',
         type: DataTypes.STRING,
         allowNull: false
     },
-    allow_download: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
-    },
     total_time: {
         type: DataTypes.INTEGER,
         allowNull: false
