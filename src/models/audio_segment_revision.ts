@@ -38,7 +38,7 @@ const AudioSegmentRevision = DbConnector.sequelize().define('audio_segment_revis
         }
     },
     revision: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
         allowNull: false
     },
     approved: {
