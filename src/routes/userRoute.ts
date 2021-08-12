@@ -6,7 +6,7 @@ var router = express.Router({ mergeParams: true });
 
 router.get("/", async (req: any, res: any) => {
   User.findAll({
-    attributes: ['id', 'name', 'email', 'role', 'active', 'createdAt'],
+    attributes: ['id', 'name', 'email', 'role', 'description', 'active', 'createdAt'],
     order: [['name', 'ASC']]
   }).then(data => res.json(data))
     .catch(error => res.status(400).json(error))

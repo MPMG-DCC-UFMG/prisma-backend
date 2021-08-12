@@ -27,6 +27,10 @@ const User = DbConnector.sequelize().define('user', {
         type: DataTypes.STRING,
         allowNull: false,
     },
+    description: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
     role: {
         type: DataTypes.STRING,
         defaultValue: 'user'
