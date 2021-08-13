@@ -44,7 +44,8 @@ router.post("/", async (req: any, res: any) => {
 });
 
 router.put('/:id', (req: any, res: any) => { 
-  User.findOne({where: req.params}).then(data => {
+  const where = {id: req.params.id=="me" ? req.body.user_id : req.params.id}
+  User.findOne({where}).then(data => {
       data?.update(req.body)
           .then(data => res.json(data))
           .catch(error => res.status(400).json(error))
