@@ -35,28 +35,34 @@ const User = DbConnector.sequelize().define('user', {
         type: DataTypes.STRING,
         defaultValue: 'user'
     },
+    role_changed: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
     active: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     }
 }, {
-  // Other model options go here
-  paranoid: true
+    // Other model options go here
+    paranoid: true
 });
 
-User.beforeCreate( async(user: any, options) => {
+User.beforeCreate(async (user: any, options) => {
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(user.password, salt);
 });
 
-User.beforeUpdate( async(user: any, options) => {
+User.beforeUpdate(async (user: any, options) => {
     const salt = await bcrypt.genSalt(10);
-    if(user.changed('password')) 
+    if (user.changed('password'))
         user.password = await bcrypt.hash(user.password, salt);
+    if (user.changed('role'))
+        user.role_changed = true;
 });
 
 (async () => {
-    await User.sync({alter: true});
+    await User.sync({ alter: true });
 })();
 
 export default User;
