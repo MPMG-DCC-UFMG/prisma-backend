@@ -13,6 +13,7 @@ app.use(cors());
 app.use(fileUpload());
 app.use((req, res, next) => {
   req.body.uploadPath = require('path').resolve('./') + '/public/files/';
+  req.body.publicPath = require('path').resolve('./') + '/public/';
   next();
 })
 

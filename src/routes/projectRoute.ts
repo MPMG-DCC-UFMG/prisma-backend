@@ -21,7 +21,7 @@ router.get('/', (req: any, res: any) => {
         include: [{
             model: User,
             as: "users",
-            attributes: ["id", "name"],
+            attributes: ["id", "name", "photo"],
             through: {attributes: []}
         }]
     }).then(data => res.json( filterResult(req, data) )
@@ -40,7 +40,7 @@ router.get('/:id', (req: any, res: any) => {
         include: [{
             model: User,
             as: "users",
-            attributes: ["id", "name"],
+            attributes: ["id", "name", "photo"],
             through: { attributes: [] }
         }]
     })

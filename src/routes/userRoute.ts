@@ -6,7 +6,7 @@ var router = express.Router({ mergeParams: true });
 
 router.get("/", async (req: any, res: any) => {
   User.findAll({
-    attributes: ['id', 'name', 'email', 'role', 'description', 'active', 'createdAt'],
+    attributes: ['id', 'name', 'photo', 'email', 'role', 'description', 'active', 'createdAt'],
     order: [['name', 'ASC']]
   }).then(data => res.json(data))
     .catch(error => res.status(400).json(error))
@@ -45,6 +45,7 @@ router.post("/", async (req: any, res: any) => {
 
 router.put('/:id', (req: any, res: any) => { 
   const where = {id: req.params.id=="me" ? req.body.user_id : req.params.id}
+  if(req.body.file) req.body.photo = req.body.file;
   User.findOne({where}).then(data => {
       data?.update(req.body)
           .then(data => res.json(data))
