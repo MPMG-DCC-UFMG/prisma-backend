@@ -10,7 +10,9 @@ var router = express.Router({ mergeParams: true });
 
 // CLASSIFICACAO
 router.get('/', (req: any, res: any) => { 
-    Classification.findAll()
+    Classification.findAll({
+        where: req.params
+    })
         .then(data => res.json(data))
         .catch(error => res.status(400).json(error))
 });

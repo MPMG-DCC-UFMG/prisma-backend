@@ -6,7 +6,9 @@ var router = express.Router({ mergeParams: true });
 
 
 router.get('/', (req: any, res: any) => { 
-    ClassificationLabel.findAll()
+    ClassificationLabel.findAll({
+        where: req.params
+    })
         .then(data => res.json(data))
         .catch(error => res.status(400).json(error))
 });

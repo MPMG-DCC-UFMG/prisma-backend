@@ -21,7 +21,7 @@ const Classification = DbConnector.sequelize().define('classification', {
     },
     classification_label_id: {
         type: DataTypes.UUID,
-        allowNull: false,
+        allowNull: true,
         references: {
             model: ClassificationLabel,
             key: 'id'
@@ -42,10 +42,10 @@ const Classification = DbConnector.sequelize().define('classification', {
 });
 
 Classification.belongsTo(Project, {foreignKey: "project_id"});
-Classification.belongsTo(ClassificationLabel, {foreignKey: "classification_label_id"});
+Classification.belongsTo(ClassificationLabel, {foreignKey: {name: "classification_label_id", allowNull: true}});
 
 (async () => {
-    await Classification.sync();
+    await Classification.sync({alter: true});
 })();
 
 export default Classification;
