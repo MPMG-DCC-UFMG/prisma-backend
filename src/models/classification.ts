@@ -1,5 +1,4 @@
 import { DbConnector } from "../services/dbConnector";
-import ClassificationLabel from "./classification_label";
 import Project from "./project";
 
 const { Sequelize, DataTypes } = require('sequelize');
@@ -19,16 +18,8 @@ const Classification = DbConnector.sequelize().define('classification', {
             key: 'id'
         }
     },
-    classification_label_id: {
-        type: DataTypes.UUID,
-        allowNull: true,
-        references: {
-            model: ClassificationLabel,
-            key: 'id'
-        }
-    },
-    text: {
-        type: DataTypes.TEXT,
+    title: {
+        type: DataTypes.STRING,
         allowNull: true
     },
     status: {
@@ -39,10 +30,8 @@ const Classification = DbConnector.sequelize().define('classification', {
     
 }, {
   // Other model options go here
+  paranoid: true
 });
-
-Classification.belongsTo(Project, {foreignKey: "project_id"});
-Classification.belongsTo(ClassificationLabel, {foreignKey: {name: "classification_label_id", allowNull: true}});
 
 (async () => {
     await Classification.sync({alter: true});

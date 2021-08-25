@@ -35,11 +35,11 @@ const toMp3 = async (filename: string) => {
 
 const resizeImage = async (filename: string) => {
     new Promise<void>((resolve, reject) => {
-        Jimp.read('./public/image/'+filename)
+        Jimp.read('./public/image/' + filename)
             .then((img) => {
                 img.resize(500, Jimp.AUTO) // resize
                     .quality(60) // set JPEG quality
-                    .write('./public/image/'+filename); // save
+                    .write('./public/image/' + filename); // save
                 resolve();
             })
             .catch((err: any) => {
@@ -58,7 +58,14 @@ router.post('/', async (req: any, res: any) => {
 
     sampleFile = req.files.file;
 
-    const dir = sampleFile.mimetype.indexOf('image') >= 0 ? req.body.publicPath + 'image/' : req.body.uploadPath;
+    let dir = req.body.publicPath + "other/";
+    if (sampleFile.mimetype.indexOf('json') >= 0) {
+        dir = req.body.publicPath + 'json/';
+    } else if (sampleFile.mimetype.indexOf('image') >= 0) {
+        dir = req.body.publicPath + 'image/';
+    } else if (sampleFile.mimetype.indexOf('audio') >= 0) {
+        dir = req.body.uploadPath;
+    }
 
     if (!fs.existsSync(dir))
         fs.mkdirSync(dir, { recursive: true });
