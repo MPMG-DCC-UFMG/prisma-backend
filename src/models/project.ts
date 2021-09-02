@@ -43,7 +43,7 @@ const Project = DbConnector.sequelize().define('projects', {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
-    classification_has_relationship: {
+    classification_multiple_labels: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },

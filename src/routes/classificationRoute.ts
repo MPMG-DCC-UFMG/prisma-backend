@@ -1,12 +1,13 @@
 import Classification from "../models/classification";
 import ClassificationCorresponding from "../models/classification_corresponding";
 import ClassificationCorrespondingLabel from "../models/classification_corresponding_label";
-import ClassificationLabel from "../models/classification_label";
 import ClassificationSegment from "../models/classification_segment";
 import ClassificationSegmentLabel from "../models/classification_segment_label";
-import ClassificationVariation from "../models/classification_variation";
-import Project from "../models/project";
+import JSZip from "jszip";
+import User from "../models/user";
+import ClassificationLabel from "../models/classification_label";
 
+var slugify = require('slugify')
 const fs = require('fs');
 var express = require('express');
 var router = express.Router({ mergeParams: true });
@@ -24,15 +25,15 @@ router.get('/', (req: any, res: any) => {
 
 router.post('/', async (req: any, res: any) => {
 
-    const project = await Project.findOne({ where: { id: req.params.project_id } });
-    const type = project?.getDataValue('classification_has_relationship') ? 'classification_relationship' : 'classification';
 
     const rawdata = fs.readFileSync(uploadPath + req.body.file);
     const data = JSON.parse(rawdata);
 
+    const type = Array.isArray(data) ? 'classification_relationship' : 'classification';
+
     if (type === "classification") {
         for (const title in data) {
-            const document = await Classification.create({ ...req.params, ...req.body, ...{ title: title } });
+            const document = await Classification.create({ ...req.params, ...req.body, ...{ type, title: title } });
             for (const segment of data[title]) {
                 await ClassificationSegment.create({
                     ...req.params,
@@ -46,7 +47,7 @@ router.post('/', async (req: any, res: any) => {
             }
         }
     } else if (type === "classification_relationship") {
-        const document = await Classification.create({ ...req.params, ...req.body, ...{ title: req.body.file } });
+        const document = await Classification.create({ ...req.params, ...req.body, ...{ type, title: req.body.file } });
         for (const segment of data) {
             const segmentData = await ClassificationSegment.create({
                 ...req.params,
@@ -54,6 +55,8 @@ router.post('/', async (req: any, res: any) => {
                 ...{
                     classification_id: document.getDataValue('id'),
                     text: segment.text,
+                    description: segment.description,
+                    ref_id: segment._id
                 }
             });
             for (const corresponding of segment.corresponding) {
@@ -72,6 +75,92 @@ router.post('/', async (req: any, res: any) => {
 
     res.sendStatus(200);
 
+});
+
+router.get('/export', async (req: any, res: any) => {
+
+    const data = await Classification.findAll({
+        where: req.params,
+        include: [{
+            model: ClassificationSegment,
+            as: "segments",
+            order: ['created_at'],
+            include: [{
+                model: ClassificationSegmentLabel,
+                as: "labels",
+                include: [User, ClassificationLabel]
+            }, {
+                model: ClassificationCorresponding,
+                as: "correspondings",
+                include: [{
+                    model: ClassificationCorrespondingLabel,
+                    as: "labels",
+                    required: req.query.only_labeled_segments,
+                    include: [User, ClassificationLabel]
+                }]
+            }]
+        }]
+    })
+
+    // res.send(data);
+    // return;
+
+    const zip = new JSZip();
+
+    for (const d of (data as any)) {
+
+        const file = slugify(d.title).replace(".json", "");
+        let content;
+
+        if (d.type === "classification_relationship") {
+            content = d.segments.map((segment: any) => ({
+                _id: segment.ref_id,
+                text: segment.text,
+                description: segment.description,
+                corresponding: segment.correspondings.map((c: any) => ({
+                    text: c.text,
+                    labels: c.labels.map((label: any) => ({
+                        label: {
+                            id: label.classification_label.id,
+                            name: label.classification_label.label,
+                        },
+                        user: {
+                            id: label.user.id,
+                            name: label.user.name
+                        }
+                    }))
+                }))
+            }));
+        } else if (d.type === "classification") {
+            content = d.segments.map((segment: any) => ({
+                id: segment.ref_id,
+                materia: segment.text,
+                labels: segment.labels.map((label: any) => ({
+                    label: {
+                        id: label.classification_label.id,
+                        name: label.classification_label.label,
+                    },
+                    user: {
+                        id: label.user.id,
+                        name: label.user.name
+                    }
+                }))
+            }));
+            // res.send(content);
+            // return;
+        }
+
+        if (content && content.length>0)
+            zip.file(file + ".json", JSON.stringify(content));
+
+    }
+
+    zip.generateAsync({ type: 'base64' }).then(function (content) {
+        res.send({
+            filename: `export-${new Date().toISOString()}.zip`,
+            data: content
+        })
+    })
 });
 
 router.get('/:id', (req: any, res: any) => {

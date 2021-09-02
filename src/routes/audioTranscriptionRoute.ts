@@ -107,7 +107,7 @@ router.post('/', async (req: any, res: any) => {
         })
 
         if (req.body.txt) {
-            const txt = fs.readFileSync(uploadPath + req.body.txt, 'utf8');
+            const txt = fs.readFileSync(req.body.publicPath + "other/" + req.body.txt, 'utf8');
 
             const newRevision = await AudioSegmentRevision.create({
                 project_id: at.project_id,

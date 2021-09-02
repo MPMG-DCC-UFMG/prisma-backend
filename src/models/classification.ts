@@ -18,6 +18,10 @@ const Classification = DbConnector.sequelize().define('classification', {
             key: 'id'
         }
     },
+    type: {
+        type: DataTypes.STRING,
+        defaultValue: 'classification'
+    },
     title: {
         type: DataTypes.STRING,
         allowNull: true
