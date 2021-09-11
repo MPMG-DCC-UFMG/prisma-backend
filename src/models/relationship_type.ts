@@ -21,13 +21,17 @@ const RelationshipType = DbConnector.sequelize().define('relationship_type', {
     label: {
         type: DataTypes.STRING,
         allowNull: false
+    },
+    description: {
+        type: DataTypes.TEXT
     }
 }, {
   // Other model options go here
+  paranoid: true
 });
 
 (async () => {
-    await RelationshipType.sync();
+    await RelationshipType.sync({alter: true});
 })();
 
 

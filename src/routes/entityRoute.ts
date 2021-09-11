@@ -2,44 +2,71 @@ import Annotation from "../models/annotation";
 import Document from "../models/document";
 import Entity from "../models/entity";
 import Sentence from "../models/sentence";
-import _ from 'lodash';
+import _, { add } from 'lodash';
 import RelationshipType from "../models/relationship_type";
 import AnnotationRelationship from "../models/annotation_relationship";
+import { Tracing } from "trace_events";
 
 var express = require('express');
 var router = express.Router({ mergeParams: true });
+const fs = require('fs');
 
-function cloneObject(obj:any){
+function cloneObject(obj: any) {
     return JSON.parse(JSON.stringify(obj));
+}
+
+const uploadPath = require('path').resolve('./') + '/public/json/';
+const fixFileName = (name: string) => name.split("-").slice(1).join("-").replace(".json", "").replace(/\.[^/.]+$/, "").replace(/_/g, ' ').replace(/-/g, ' ');
+
+const getEntities = async (project_id: string) => await Entity.findAll({ where: { project_id } });
+const addEntity = async (project_id: string, label: string, color?: string, icon?: string) => await Entity.create({
+    project_id, label, color, icon
+})
+
+const getEntityByLabel = async (project_id: string, label: string) => {
+    try {
+        let entity = await Entity.findOne({
+            where: {
+                project_id,
+                label
+            }
+        });
+        if (!entity) entity = await addEntity(project_id, label);
+        return entity?.getDataValue("id");
+    } catch {
+        const entity = await addEntity(project_id, label);
+        return entity?.getDataValue("id");
+    }
 }
 
 // ENTIDADES
 
-router.get('/entity', (req: any, res: any) => { 
-    Entity.findAll({
-        where: {...req.params},
-    })
-    .then(data => res.status(data ? 200 : 404).json(data))
-    .catch(error => res.status(400).json(error))
+router.get('/entity', async (req: any, res: any) => {
+    try {
+        const data = await getEntities(req.params.project_id);
+        res.status(data ? 200 : 404).json(data);
+    } catch (error: any) {
+        res.status(400).json(error);
+    }
 });
 
-router.get('/entity/:id', (req: any, res: any) => { 
+router.get('/entity/:id', (req: any, res: any) => {
     Entity.findOne({
-        where: {...req.params},
+        where: { ...req.params },
     })
-    .then(data => res.status(data ? 200 : 404).json(data))
-    .catch(error => res.status(400).json(error))
+        .then(data => res.status(data ? 200 : 404).json(data))
+        .catch(error => res.status(400).json(error))
 });
 
-router.post('/entity', (req: any, res: any) => { 
-    Entity.create({...req.params, ...req.body})
+router.post('/entity', (req: any, res: any) => {
+    Entity.create({ ...req.params, ...req.body })
         .then(data => res.json(data))
         .catch(error => res.status(400).json(error))
 });
 
-router.put('/entity/:id', (req: any, res: any) => { 
-    Entity.findOne({where: req.params}).then(data => {
-        if(!data) res.status(404).send()
+router.put('/entity/:id', (req: any, res: any) => {
+    Entity.findOne({ where: req.params }).then(data => {
+        if (!data) res.status(404).send()
         data?.update(req.body)
             .then(data => res.json(data))
             .catch(error => res.status(400).json(error))
@@ -49,64 +76,108 @@ router.put('/entity/:id', (req: any, res: any) => {
 
 // RELACIONAMENTOS
 
-router.get('/relationship', (req: any, res: any) => { 
+router.get('/relationship', (req: any, res: any) => {
     RelationshipType.findAll({
-        where: {...req.params},
+        where: { ...req.params },
     })
-    .then(data => res.status(data ? 200 : 404).json(data))
-    .catch(error => res.status(400).json(error))
+        .then(data => res.status(data ? 200 : 404).json(data))
+        .catch(error => res.status(400).json(error))
 });
 
-router.get('/relationship/:id', (req: any, res: any) => { 
+router.get('/relationship/:id', (req: any, res: any) => {
     RelationshipType.findOne({
-        where: {...req.params},
+        where: { ...req.params },
     })
-    .then(data => res.status(data ? 200 : 404).json(data))
-    .catch(error => res.status(400).json(error))
+        .then(data => res.status(data ? 200 : 404).json(data))
+        .catch(error => res.status(400).json(error))
 });
 
-router.post('/relationship', (req: any, res: any) => { 
-    RelationshipType.create({...req.params, ...req.body})
+router.post('/relationship', (req: any, res: any) => {
+    RelationshipType.create({ ...req.params, ...req.body })
         .then(data => res.json(data))
         .catch(error => res.status(400).json(error))
 });
 
-router.put('/relationship/:id', (req: any, res: any) => { 
-    RelationshipType.findOne({where: req.params}).then(data => {
-        if(!data) res.status(404).send()
+router.put('/relationship/:id', (req: any, res: any) => {
+    RelationshipType.findOne({ where: req.params }).then(data => {
+        if (!data) res.status(404).send()
         data?.update(req.body)
             .then(data => res.json(data))
             .catch(error => res.status(400).json(error))
     })
 });
 
+router.delete('/relationship/:id', (req: any, res: any) => {
+    RelationshipType.findOne({ where: req.params }).then(data => {
+        data?.destroy();
+        res.send();
+    })
+});
+
 
 // DOCUMENTOS
 
-router.get('/', (req: any, res: any) => { 
-    Document.findAll({where: req.params})
+router.get('/', (req: any, res: any) => {
+    Document.findAll({ where: req.params })
         .then(data => res.json(data))
         .catch(error => res.status(400).json(error))
 });
 
-router.post('/', (req: any, res: any) => { 
-    Document.create({...req.params, ...req.body})
-        .then(data => res.json(data))
-        .catch(error => res.status(400).json(error))
+router.post('/', async (req: any, res: any) => {
+
+    const rawdata = fs.readFileSync(uploadPath + req.body.file);
+    const data = JSON.parse(rawdata);
+
+    const document = await Document.create({
+        ...req.params,
+        ...{
+            name: fixFileName(req.body.file)
+        }
+    })
+
+    for (const sentence of data.sentences) {
+        //res.send(sentence);
+
+        const newSentence = await Sentence.create({
+            ...req.params,
+            ...{
+                document_id: document.getDataValue('id'),
+                sentence: sentence.text
+            }
+        });
+
+        for (const entity of sentence.entities) {
+            const entity_id = await getEntityByLabel(req.params.project_id, entity.label);
+            const annotation = await Annotation.create({
+                ...req.params,
+                ...{
+                    entity_id,
+                    document_id: document.getDataValue('id'),
+                    sentence_id: newSentence.getDataValue('id'),
+                    start: entity.start,
+                    end: entity.end,
+                    text: entity.entity
+                }
+            });
+        }
+    }
+
+    res.sendStatus(200);
+
 });
 
-router.get('/:id', (req: any, res: any) => { 
+router.get('/:id', (req: any, res: any) => {
 
     const relationship = RelationshipType.findAll({
-        where: {project_id: req.params.project_id}
+        where: { project_id: req.params.project_id }
     });
 
     const entity = Entity.findAll({
-        where: {project_id: req.params.project_id}
+        where: { project_id: req.params.project_id }
     });
 
     const document = Document.findOne({
-        where: {...req.params, ...req.body},
+        where: { ...req.params },
         include: [{
             model: Sentence,
             include: [{
@@ -120,72 +191,55 @@ router.get('/:id', (req: any, res: any) => {
             attributes: ['id', 'sentence']
         }]
     })
-    
+
     Promise.all([document, entity, relationship])
-        .then((data:any[]) => res.status(data[0] ? 200 : 404).json({ 
-            ...cloneObject(data[0]), 
-            ...{entities: data[1]},
-            ...{relationship_types: data[2]} 
+        .then((data: any[]) => res.status(data[0] ? 200 : 404).json({
+            ...cloneObject(data[0]),
+            ...{ entities: data[1] },
+            ...{ relationship_types: data[2] }
         }))
         .catch(error => res.status(400).json(error))
 
 });
 
-router.put('/:id', (req: any, res: any) => { 
-    Document.findOne({where: req.params}).then(data => {
-        if(!data) res.status(404).send()
+router.put('/:id', (req: any, res: any) => {
+    Document.findOne({ where: req.params }).then(data => {
+        if (!data) res.status(404).send()
         data?.update(req.body)
             .then(data => res.json(data))
             .catch(error => res.status(400).json(error))
     })
 });
 
-router.delete('/:id', (req: any, res: any) => { 
-    Document.findOne({where: {...req.params, ...req.body}}).then(data => {
+router.delete('/:id', (req: any, res: any) => {
+    Document.findOne({ where: { ...req.params, ...req.body } }).then(data => {
         data?.destroy();
         res.send();
     })
 });
 
 
-// Frases / Sentenças
+// Anotações
 
-router.post('/:document_id/sentence', (req: any, res: any) => { 
-    Sentence.create({...req.params, ...req.body})
+router.post('/:document_id/sentence/:sentence_id/annotation', (req: any, res: any) => {
+    Annotation.create({ ...req.params, ...req.body })
         .then(data => res.json(data))
         .catch(error => res.status(400).json(error))
 });
 
-router.put('/:document_id/sentence/:id', (req: any, res: any) => { 
-    Sentence.findOne({where: req.params}).then(data => {
-        if(!data) res.status(404).send()
+router.put('/:document_id/sentence/:sentence_id/annotation/:id', (req: any, res: any) => {
+    const { sentence_id, id } = req.params;
+    Annotation.findOne({ where: { sentence_id, id } }).then(data => {
+        if (!data) res.status(404).send()
         data?.update(req.body)
             .then(data => res.json(data))
             .catch(error => res.status(400).json(error))
     })
 });
 
-// Anotações
-
-router.post('/:document_id/sentence/:sentence_id/annotation', (req: any, res: any) => { 
-    Annotation.create({...req.params, ...req.body})
-    .then(data => res.json(data))
-    .catch(error => res.status(400).json(error))
-});
-
-router.put('/:document_id/sentence/:sentence_id/annotation/:id', (req: any, res: any) => { 
-    const {sentence_id, id} = req.params;
-    Annotation.findOne({where: { sentence_id, id }}).then(data => {
-        if(!data) res.status(404).send()
-        data?.update(req.body)
-            .then(data => res.json(data))
-            .catch(error => res.status(400).json(error))
-    })
-});
-
-router.delete('/:document_id/sentence/:sentence_id/annotation/:id', (req: any, res: any) => { 
-    const {sentence_id, id} = req.params;
-    Annotation.findOne({where: { sentence_id, id }}).then(data => {
+router.delete('/:document_id/sentence/:sentence_id/annotation/:id', (req: any, res: any) => {
+    const { sentence_id, id } = req.params;
+    Annotation.findOne({ where: { sentence_id, id } }).then(data => {
         data?.destroy();
         res.send();
     })
@@ -194,25 +248,25 @@ router.delete('/:document_id/sentence/:sentence_id/annotation/:id', (req: any, r
 
 // Relacionamento entre anotações
 
-router.post('/:document_id/sentence/:sentence_id/relationship', (req: any, res: any) => { 
-    AnnotationRelationship.create({...req.params, ...req.body})
-    .then(data => res.json(data))
-    .catch(error => res.status(400).json(error))
+router.post('/:document_id/sentence/:sentence_id/relationship', (req: any, res: any) => {
+    AnnotationRelationship.create({ ...req.params, ...req.body })
+        .then(data => res.json(data))
+        .catch(error => res.status(400).json(error))
 });
 
-router.put('/:document_id/sentence/:sentence_id/relationship/:id', (req: any, res: any) => { 
-    const {sentence_id, id} = req.params;
-    AnnotationRelationship.findOne({where: { sentence_id, id }}).then(data => {
-        if(!data) res.status(404).send()
+router.put('/:document_id/sentence/:sentence_id/relationship/:id', (req: any, res: any) => {
+    const { sentence_id, id } = req.params;
+    AnnotationRelationship.findOne({ where: { sentence_id, id } }).then(data => {
+        if (!data) res.status(404).send()
         data?.update(req.body)
             .then(data => res.json(data))
             .catch(error => res.status(400).json(error))
     })
 });
 
-router.delete('/:document_id/sentence/:sentence_id/relationship/:id', (req: any, res: any) => { 
-    const {sentence_id, id} = req.params;
-    AnnotationRelationship.findOne({where: { sentence_id, id }}).then(data => {
+router.delete('/:document_id/sentence/:sentence_id/relationship/:id', (req: any, res: any) => {
+    const { sentence_id, id } = req.params;
+    AnnotationRelationship.findOne({ where: { sentence_id, id } }).then(data => {
         data?.destroy();
         res.send();
     })
