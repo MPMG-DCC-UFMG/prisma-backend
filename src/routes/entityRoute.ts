@@ -6,6 +6,8 @@ import _, { add } from 'lodash';
 import RelationshipType from "../models/relationship_type";
 import AnnotationRelationship from "../models/annotation_relationship";
 import { Tracing } from "trace_events";
+import slugify from "slugify";
+import JSZip from "jszip";
 
 var express = require('express');
 var router = express.Router({ mergeParams: true });
@@ -135,6 +137,7 @@ router.post('/', async (req: any, res: any) => {
         }
     })
 
+    let i = 0;
     for (const sentence of data.sentences) {
         //res.send(sentence);
 
@@ -142,9 +145,11 @@ router.post('/', async (req: any, res: any) => {
             ...req.params,
             ...{
                 document_id: document.getDataValue('id'),
-                sentence: sentence.text
+                sentence: sentence.text,
+                order: i
             }
         });
+        i++;
 
         for (const entity of sentence.entities) {
             const entity_id = await getEntityByLabel(req.params.project_id, entity.label);
@@ -164,6 +169,74 @@ router.post('/', async (req: any, res: any) => {
 
     res.sendStatus(200);
 
+});
+
+router.get('/export', async (req: any, res: any) => {
+
+    const relationship = await RelationshipType.findAll({
+        where: { project_id: req.params.project_id }
+    });
+
+    const entity = await Entity.findAll({
+        where: { project_id: req.params.project_id }
+    });
+
+    const document = await Document.findAll({
+        where: { project_id: req.params.project_id },
+        include: [{
+            model: Sentence,
+            include: [{
+                model: Annotation,
+                attributes: ['id', 'user_id', 'entity_id', 'start', 'end', 'text'],
+                include: [Entity]
+            },
+            {
+                model: AnnotationRelationship,
+                attributes: ['id', 'user_id', 'relationship_type_id', 'from_annotation_id', 'to_annotation_id'],
+                include: [RelationshipType]
+            }],
+            attributes: ['id', 'sentence']
+        }],
+        order: [
+            [Sentence, 'order', 'asc']
+        ]
+    })
+
+    const zip = new JSZip();
+
+    for (const d of (document as any)) {
+
+        const file = slugify(d.name).replace(".json", "");
+        const content = {
+            name: d.name,
+            entities: d.sentences.map((s: any) => ({
+                sentence: s.sentence,
+                annotations: s.annotations.map((a: any) => ({
+                    id: a.id,
+                    start: a.start,
+                    end: a.end,
+                    entity: a.text,
+                    label: a.entity.label,
+                })),
+                relationships: s.annotation_relationships.map((r: any) => ({
+                    from_annotation_id: r.from_annotation_id,
+                    to_annotation_id: r.to_annotation_id,
+                    label: r.relationship_type.label,
+                }))
+            }))
+        }
+
+        if (content)
+            zip.file(file + ".json", JSON.stringify(content));
+
+    }
+
+    zip.generateAsync({ type: 'base64' }).then(function (content) {
+        res.send({
+            filename: `export-${new Date().toISOString()}.zip`,
+            data: content
+        })
+    })
 });
 
 router.get('/:id', (req: any, res: any) => {
@@ -189,7 +262,10 @@ router.get('/:id', (req: any, res: any) => {
                 attributes: ['id', 'user_id', 'relationship_type_id', 'from_annotation_id', 'to_annotation_id']
             }],
             attributes: ['id', 'sentence']
-        }]
+        }],
+        order: [
+            [Sentence, 'order', 'asc']
+        ]
     })
 
     Promise.all([document, entity, relationship])
@@ -217,6 +293,7 @@ router.delete('/:id', (req: any, res: any) => {
         res.send();
     })
 });
+
 
 
 // Anotações

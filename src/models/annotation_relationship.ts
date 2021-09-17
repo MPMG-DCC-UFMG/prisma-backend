@@ -46,6 +46,7 @@ const AnnotationRelationship = DbConnector.sequelize().define('annotation_relati
 });
 
 Sentence.hasMany(AnnotationRelationship, {foreignKey: "sentence_id"});
+AnnotationRelationship.belongsTo(RelationshipType, {foreignKey: "relationship_type_id"});
 
 (async () => {
     await AnnotationRelationship.sync();

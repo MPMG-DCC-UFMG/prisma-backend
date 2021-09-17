@@ -48,6 +48,7 @@ const Annotation = DbConnector.sequelize().define('annotation', {
 });
 
 Sentence.hasMany(Annotation, {foreignKey: "sentence_id"});
+Annotation.belongsTo(Entity, {foreignKey: "entity_id"});
 
 
 (async () => {

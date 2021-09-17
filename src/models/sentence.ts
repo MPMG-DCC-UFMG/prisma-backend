@@ -28,6 +28,10 @@ const Sentence = DbConnector.sequelize().define('sentence', {
     sentence: {
         type: DataTypes.TEXT,
         allowNull: false
+    },
+    order: {
+        type: DataTypes.INTEGER,
+        allowNull: false
     }
     
 }, {
@@ -38,7 +42,7 @@ Document.hasMany(Sentence, {foreignKey: "document_id"});
 
 
 (async () => {
-    await Sentence.sync();
+    await Sentence.sync({alter: true});
 })();
 
 export default Sentence;
