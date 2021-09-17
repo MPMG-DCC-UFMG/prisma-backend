@@ -31,7 +31,7 @@ const Sentence = DbConnector.sequelize().define('sentence', {
     },
     order: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: true
     }
     
 }, {
