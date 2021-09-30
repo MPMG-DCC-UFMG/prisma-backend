@@ -26,6 +26,10 @@ const Classification = DbConnector.sequelize().define('classification', {
         type: DataTypes.STRING,
         allowNull: true
     },
+    annotation_model_created: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
     status: {
         type: DataTypes.STRING,
         allowNull: false,

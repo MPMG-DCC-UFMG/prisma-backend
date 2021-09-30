@@ -6,6 +6,7 @@ import ClassificationSegmentLabel from "../models/classification_segment_label";
 import JSZip from "jszip";
 import User from "../models/user";
 import ClassificationLabel from "../models/classification_label";
+import { AnnotationService } from "../services/annotationService";
 
 var slugify = require('slugify')
 const fs = require('fs');
@@ -150,7 +151,7 @@ router.get('/export', async (req: any, res: any) => {
             // return;
         }
 
-        if (content && content.length>0)
+        if (content && content.length > 0)
             zip.file(file + ".json", JSON.stringify(content));
 
     }
@@ -163,28 +164,69 @@ router.get('/export', async (req: any, res: any) => {
     })
 });
 
-router.get('/:id', (req: any, res: any) => {
-    Classification.findOne({
-        where: req.params,
-        include: [{
-            model: ClassificationSegment,
-            as: "segments",
-            order: ['created_at'],
+router.get('/:id', async (req: any, res: any) => {
+    try {
+        const data = await Classification.findOne({
+            where: req.params,
             include: [{
-                model: ClassificationSegmentLabel,
-                as: "labels"
-            }, {
-                model: ClassificationCorresponding,
-                as: "correspondings",
+                model: ClassificationSegment,
+                as: "segments",
+                order: ['created_at'],
                 include: [{
-                    model: ClassificationCorrespondingLabel,
+                    model: ClassificationSegmentLabel,
                     as: "labels"
+                }, {
+                    model: ClassificationCorresponding,
+                    as: "correspondings",
+                    include: [{
+                        model: ClassificationCorrespondingLabel,
+                        as: "labels"
+                    }]
                 }]
             }]
-        }]
-    })
-        .then(data => res.status(data ? 200 : 404).json(data))
-        .catch(error => res.status(400).json(error))
+        });
+        const annotationService = new AnnotationService();
+
+
+        if (data?.getDataValue('annotation_model_created')) {
+
+        } else if (data) {
+            const models = await annotationService.getModels();
+            const strategies = await annotationService.getStrategies();
+
+            const segments = await ClassificationSegment.findAll({
+                where: {
+                    classification_id: data.getDataValue("id")
+                }
+            });
+
+            const json_file = {
+                segments: segments.map(segment => ({
+                    id: segment.getDataValue('ref_id'),
+                    materia: segment.getDataValue('text')
+                }))
+            };
+
+            fs.writeFileSync(`./annotation_service/data/${data.getDataValue('id')}.json`, JSON.stringify(json_file));
+
+            const created = await annotationService.createModel(
+                data?.getDataValue('id'),
+                `${data.getDataValue('id')}.json`,
+                models[0],
+                strategies[0],
+            );
+
+            if (created == "created") {
+                data.update({
+                    annotation_model_created: true
+                })
+            }
+        }
+
+
+    } catch (error) {
+        res.status(400).json(error);
+    }
 });
 
 router.put('/:id', (req: any, res: any) => {
