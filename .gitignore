@@ -14,6 +14,12 @@
 /dist
 /postgres-data
 
+# annotation_service
+/annotation_service/data
+/annotation_service/models
+/annotation_service/results
+
+
 # misc
 .DS_Store
 .env.local

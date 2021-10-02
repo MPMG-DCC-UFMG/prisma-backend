@@ -21,7 +21,7 @@ export class AnnotationService {
                 jsonFileName,
                 model,
                 strategy,
-                n_initial: 10,
+                n_initial: 1,
                 batch_size: 1,
                 topics: []
             }
@@ -30,7 +30,34 @@ export class AnnotationService {
                 "Content-Type": "application/json"
             }
         });
+        return response.data.return;
+    }
+
+    async query(id: string): Promise<any> {
+        const url = `${this.URL}query?id=${id}`;
+        const response = await axios.get(url);
         return response.data;
+    }
+
+    async teach(id: string, ref_id: string, topic: string, error: boolean = false): Promise<string> {
+        const response = await axios.post<any>(`${this.URL}teach?id=${id}`, {
+            results: {
+                ref_id,
+                topic,
+                error
+            }
+        }, {
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+        return response.data.return;
+    }
+
+    async scores(id: string): Promise<number[]> {
+        const url = `${this.URL}scores?id=${id}`;
+        const response = await axios.get<ScoresResponse>(url);
+        return response.data.scores;
     }
 
 }
@@ -41,8 +68,9 @@ export interface StrategiesResponse {
 export interface ModelsResponse {
     models: string[];
 }
-
-
+export interface ScoresResponse {
+    scores: number[];
+}
 export interface Return {
     return: string;
 }

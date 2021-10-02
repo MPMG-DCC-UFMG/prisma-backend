@@ -185,18 +185,18 @@ router.get('/:id', async (req: any, res: any) => {
                 }]
             }]
         });
+
+        if (!data) res.sendStatus(404);
+
         const annotationService = new AnnotationService();
 
-
-        if (data?.getDataValue('annotation_model_created')) {
-
-        } else if (data) {
+        if (!data?.getDataValue('annotation_model_created')) {
             const models = await annotationService.getModels();
             const strategies = await annotationService.getStrategies();
 
             const segments = await ClassificationSegment.findAll({
                 where: {
-                    classification_id: data.getDataValue("id")
+                    classification_id: data?.getDataValue("id")
                 }
             });
 
@@ -207,25 +207,46 @@ router.get('/:id', async (req: any, res: any) => {
                 }))
             };
 
-            fs.writeFileSync(`./annotation_service/data/${data.getDataValue('id')}.json`, JSON.stringify(json_file));
+            fs.writeFileSync(`./annotation_service/data/${data?.getDataValue('id')}.json`, JSON.stringify(json_file));
 
             const created = await annotationService.createModel(
                 data?.getDataValue('id'),
-                `${data.getDataValue('id')}.json`,
+                `${data?.getDataValue('id')}.json`,
                 models[0],
                 strategies[0],
             );
 
             if (created == "created") {
-                data.update({
+                data?.update({
                     annotation_model_created: true
                 })
             }
         }
 
+        res.json(data);
 
     } catch (error) {
         res.status(400).json(error);
+    }
+});
+
+router.get('/:id/query', async (req: any, res: any) => {
+    const annotationService = new AnnotationService();
+    try {
+        const response = await annotationService.query(req.params.id);
+        res.json(response);
+    } catch (e) {
+        res.status(500).json(e);
+    }
+});
+
+router.get('/:id/scores', async (req: any, res: any) => {
+    const annotationService = new AnnotationService();
+    try {
+        const response = await annotationService.scores(req.params.id);
+        res.json(response);
+    } catch (e) {
+        res.status(500).json(e);
     }
 });
 
@@ -245,7 +266,6 @@ router.delete('/:id', (req: any, res: any) => {
 });
 
 
-
 router.post('/:classification_id/segment/:segment_id/label', async (req: any, res: any) => {
 
     const user_id = req.body.user_id;
@@ -253,6 +273,16 @@ router.post('/:classification_id/segment/:segment_id/label', async (req: any, re
     const classification_segment_id = req.params.segment_id;
     const project_id = req.params.project_id;
     const classification_label_id = req.body.classification_label_id;
+    const ref_id = req.body.ref_id;
+
+    const label = await ClassificationLabel.findOne({ where: { id: classification_label_id } });
+
+    const annotationService = new AnnotationService();
+    const teachResponse = await annotationService.teach(
+        classification_id,
+        ref_id,
+        label?.getDataValue('label')
+    );
 
     ClassificationSegmentLabel.findOne({
         where: {
