@@ -47,7 +47,7 @@ router.get('/export', async (req: any, res: any) => {
                 as: "revisions",
                 include: [{
                     model: User,
-                    attributes: ["id", "name", "email"],
+                    attributes: ["id", "photo", "name", "email"],
                 }]
             }]
         }],

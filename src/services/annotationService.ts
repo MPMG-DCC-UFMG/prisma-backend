@@ -21,7 +21,7 @@ export class AnnotationService {
                 jsonFileName,
                 model,
                 strategy,
-                n_initial: 1,
+                n_initial: 10,
                 batch_size: 1,
                 topics: []
             }
@@ -40,13 +40,15 @@ export class AnnotationService {
     }
 
     async teach(id: string, ref_id: string, topic: string, error: boolean = false): Promise<string> {
-        const response = await axios.post<any>(`${this.URL}teach?id=${id}`, {
-            results: {
-                ref_id,
+        const data = {
+            results: [{
+                id: ref_id,
                 topic,
                 error
-            }
-        }, {
+            }]
+        };
+        console.log(data);
+        const response = await axios.post<any>(`${this.URL}teach?id=${id}`, data, {
             headers: {
                 "Content-Type": "application/json"
             }

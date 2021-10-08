@@ -61,7 +61,7 @@ AudioSegment.belongsTo(Project, {foreignKey: "project_id"});
 AudioTranscription.hasMany(AudioSegment, {foreignKey: "audio_transcription_id", as: "segments"});
 
 (async () => {
-    await AudioSegment.sync({alter: true});
+    await AudioSegment.sync();
 })();
 
 export default AudioSegment;

@@ -188,38 +188,41 @@ router.get('/:id', async (req: any, res: any) => {
 
         if (!data) res.sendStatus(404);
 
-        const annotationService = new AnnotationService();
+        if (data?.getDataValue("type") == "classification") {
+            data.setDataValue("segments", []);
+            const annotationService = new AnnotationService();
 
-        if (!data?.getDataValue('annotation_model_created')) {
-            const models = await annotationService.getModels();
-            const strategies = await annotationService.getStrategies();
+            if (!data?.getDataValue('annotation_model_created')) {
+                const models = await annotationService.getModels();
+                const strategies = await annotationService.getStrategies();
 
-            const segments = await ClassificationSegment.findAll({
-                where: {
-                    classification_id: data?.getDataValue("id")
+                const segments = await ClassificationSegment.findAll({
+                    where: {
+                        classification_id: data?.getDataValue("id")
+                    }
+                });
+
+                const json_file = {
+                    segments: segments.map(segment => ({
+                        id: segment.getDataValue('ref_id'),
+                        materia: segment.getDataValue('text')
+                    }))
+                };
+
+                fs.writeFileSync(`./annotation_service/data/${data?.getDataValue('id')}.json`, JSON.stringify(json_file));
+
+                const created = await annotationService.createModel(
+                    data?.getDataValue('id'),
+                    `${data?.getDataValue('id')}.json`,
+                    models[0],
+                    strategies[0],
+                );
+
+                if (created == "created") {
+                    data?.update({
+                        annotation_model_created: true
+                    })
                 }
-            });
-
-            const json_file = {
-                segments: segments.map(segment => ({
-                    id: segment.getDataValue('ref_id'),
-                    materia: segment.getDataValue('text')
-                }))
-            };
-
-            fs.writeFileSync(`./annotation_service/data/${data?.getDataValue('id')}.json`, JSON.stringify(json_file));
-
-            const created = await annotationService.createModel(
-                data?.getDataValue('id'),
-                `${data?.getDataValue('id')}.json`,
-                models[0],
-                strategies[0],
-            );
-
-            if (created == "created") {
-                data?.update({
-                    annotation_model_created: true
-                })
             }
         }
 
@@ -277,13 +280,6 @@ router.post('/:classification_id/segment/:segment_id/label', async (req: any, re
 
     const label = await ClassificationLabel.findOne({ where: { id: classification_label_id } });
 
-    const annotationService = new AnnotationService();
-    const teachResponse = await annotationService.teach(
-        classification_id,
-        ref_id,
-        label?.getDataValue('label')
-    );
-
     ClassificationSegmentLabel.findOne({
         where: {
             user_id, classification_id, classification_segment_id
@@ -301,6 +297,25 @@ router.post('/:classification_id/segment/:segment_id/label', async (req: any, re
             res.json(data);
         }
     })
+
+});
+
+router.post('/:classification_id/segment/:segment_ref_id/teach', async (req: any, res: any) => {
+
+    const classification_id = req.params.classification_id;
+    const ref_id = req.params.segment_ref_id;
+    const classification_label_id = req.body.classification_label_id;
+
+    const label = await ClassificationLabel.findOne({ where: { id: classification_label_id } });
+
+    const annotationService = new AnnotationService();
+    const teachResponse = await annotationService.teach(
+        classification_id,
+        ref_id,
+        label?.getDataValue('label')
+    );
+
+    res.send(teachResponse);
 
 });
 

@@ -43,12 +43,14 @@ const ParaphraseRevision = DbConnector.sequelize().define('paraphrase_revision',
     
 }, {
   // Other model options go here
+  paranoid: true
 });
 
 Paraphrase.hasMany(ParaphraseRevision, {foreignKey: "paraphrase_id", as: "revisions"});
+ParaphraseRevision.belongsTo(User, {foreignKey: "user_id"});
 
 (async () => {
-    await ParaphraseRevision.sync();
+    await ParaphraseRevision.sync({alter: true});
 })();
 
 export default ParaphraseRevision;
