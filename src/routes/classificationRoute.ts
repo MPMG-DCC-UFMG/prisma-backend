@@ -34,7 +34,7 @@ router.post('/', async (req: any, res: any) => {
 
     if (type === "classification") {
         for (const title in data) {
-            const document = await Classification.create({ ...req.params, ...req.body, ...{ type, title: title } });
+            const document = await Classification.create({ ...req.params, ...req.body, ...{ type, title: req.body.file.substring(14) } });
             for (const segment of data[title]) {
                 await ClassificationSegment.create({
                     ...req.params,

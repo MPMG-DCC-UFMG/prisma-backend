@@ -36,12 +36,13 @@ router.get('/:id', (req: any, res: any) => {
         include: [{
             model: ParaphraseRevision,
             as: "revisions",
-            attributes: ["id", "user_id", "revision", "createdAt", "updatedAt"],
+            attributes: ["id", "user_id", "revision", "approved", "createdAt", "updatedAt"],
             include: [{
                 model: User,
                 attributes: ["id", "photo", "name", "email"],
             }]
-        }]
+        }],
+        order: [["createdAt", "ASC"]]
     })
         .then(data => res.status(data ? 200 : 404).json(data))
         .catch(error => res.status(400).json(error))

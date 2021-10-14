@@ -39,6 +39,10 @@ const ParaphraseRevision = DbConnector.sequelize().define('paraphrase_revision',
     revision: {
         type: DataTypes.STRING,
         allowNull: false
+    },
+    approved: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
     }
     
 }, {
