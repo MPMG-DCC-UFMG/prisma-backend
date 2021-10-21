@@ -61,7 +61,7 @@ def get_X_y(jsonFile, annotationFile):
 	return X, y, X_values, X_ids, labeled_idx
 
 #X, y, X_values, X_ids, labeled_idx = get_data("data/sample_09-09.json", "results/12.tsv")
-#print(len(X), len(labeled_idx))
+
 
 
 # In[22]:
@@ -130,7 +130,6 @@ class Classification(object):
 				)
 
 				self.accuracy_scores = [self.learner.score(self.X_test, self.y_test)]
-				
 				self.flag_rotulosPendentes = False
 			
 		# Rotula o mínimo necessário para executar o classificador
@@ -138,27 +137,28 @@ class Classification(object):
 			# Seta quantas anotações são necessárias para gerar o modelo
 			self.flag_rotulosPendentes = self.n_initial*2-len(labeled_idx)
 			self.accuracy_scores = []
-		#print(self.flag_rotulosPendentes)
 	
 	def query(self):
 		data = dict()
 		data["segments"] = list()
 		
 		# Caso ainda haja pendência de anotações para gerar grupos inicial e de teste
-		if self.flag_rotulosPendentes:
+		if self.flag_rotulosPendentes or not hasattr(self, "learner"):
 			idxs = np.random.choice(range(len(self.X_values)), size=self.flag_rotulosPendentes, replace=False)
 			for query_idx in idxs:
 				value = self.X_values[query_idx]
 				id = self.X_IDs[query_idx]
 				data["segments"].append({"id": id, "materia": value})
 		else:
-			query_idx, query_inst = self.learner.query(self.X_pool)
-			value = self.X_values[query_idx][0]
-			id = self.X_IDs[query_idx][0]
-			self.dict_ID_idx[id] = query_idx
-			self.dict_ID_inst[id] = query_inst
-			data = {"segments": [{"id": id, "materia": value}]}
-
+			if (len(self.X_pool) == 0):
+				data = {"status": "finished"}
+			else:
+				query_idx, query_inst = self.learner.query(self.X_pool)
+				value = self.X_values[query_idx][0]
+				id = self.X_IDs[query_idx][0]
+				self.dict_ID_idx[id] = query_idx
+				self.dict_ID_inst[id] = query_inst
+				data = {"segments": [{"id": id, "materia": value}]}
 		return data
 	
 	def teach(self, data):
@@ -168,7 +168,7 @@ class Classification(object):
 				for p in data["results"]:
 					if "id" in p and "topic" in p and "error" in p:
 						# Caso ainda haja pendência de anotações para gerar grupos inicial e de teste
-						if self.flag_rotulosPendentes:
+						if self.flag_rotulosPendentes or not hasattr(self, "learner"):
 							if p["topic"] != None:
 								self.flag_rotulosPendentes = self.flag_rotulosPendentes - 1
 								self.write_annotation(p["id"], p["topic"], p["error"])

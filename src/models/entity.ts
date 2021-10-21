@@ -32,12 +32,13 @@ const Entity = DbConnector.sequelize().define('entity', {
     }
 }, {
   // Other model options go here
+  paranoid: true
 });
 
 Entity.belongsTo(Project, { foreignKey: "project_id" });
 
 (async () => {
-    await Entity.sync();
+    await Entity.sync({alter: true});
 })();
 
 

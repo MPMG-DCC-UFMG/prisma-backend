@@ -50,6 +50,11 @@ const ParaphraseRevision = DbConnector.sequelize().define('paraphrase_revision',
   paranoid: true
 });
 
+ParaphraseRevision.beforeUpdate(async (data: any, options) => {
+    if (data.changed('user_id'))
+        data.user_id = null
+});
+
 Paraphrase.hasMany(ParaphraseRevision, {foreignKey: "paraphrase_id", as: "revisions"});
 ParaphraseRevision.belongsTo(User, {foreignKey: "user_id"});
 

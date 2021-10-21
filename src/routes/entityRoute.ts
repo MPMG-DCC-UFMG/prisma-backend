@@ -203,10 +203,10 @@ router.get('/export', async (req: any, res: any) => {
     })
 
     const zip = new JSZip();
-
+    let i = 0;
     for (const d of (document as any)) {
-
-        const file = slugify(d.name).replace(".json", "");
+        i++;
+        const file = slugify(`${i}-${d.name}`).replace(".json", "");
         const content = {
             name: d.name,
             entities: d.sentences.map((s: any) => ({
@@ -288,7 +288,7 @@ router.put('/:id', (req: any, res: any) => {
 });
 
 router.delete('/:id', (req: any, res: any) => {
-    Document.findOne({ where: { ...req.params, ...req.body } }).then(data => {
+    Document.findOne({ where: { id: req.params.id } }).then(data => {
         data?.destroy();
         res.send();
     })

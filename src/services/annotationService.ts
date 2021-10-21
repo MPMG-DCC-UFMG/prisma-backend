@@ -21,7 +21,7 @@ export class AnnotationService {
                 jsonFileName,
                 model,
                 strategy,
-                n_initial: 10,
+                n_initial: 5,
                 batch_size: 1,
                 topics: []
             }
