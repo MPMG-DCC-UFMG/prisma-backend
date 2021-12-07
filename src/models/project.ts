@@ -47,6 +47,10 @@ const Project = DbConnector.sequelize().define('projects', {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
+    classification_users_per_segment: {
+        type: DataTypes.INTEGER,
+        defaultValue: 1
+    },
     audio_allow_download: {
         type: DataTypes.BOOLEAN,
         defaultValue: false

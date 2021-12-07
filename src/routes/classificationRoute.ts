@@ -7,6 +7,8 @@ import JSZip from "jszip";
 import User from "../models/user";
 import ClassificationLabel from "../models/classification_label";
 import { AnnotationService } from "../services/annotationService";
+import ProjectUser from "../models/project_user";
+import Project from "../models/project";
 
 var slugify = require('slugify')
 const fs = require('fs');
@@ -15,14 +17,71 @@ var router = express.Router({ mergeParams: true });
 
 const uploadPath = require('path').resolve('./') + '/public/json/';
 
+const countClassificationSegments = async (classification_id: string) => {
+    const count = await ClassificationSegment.count({ where: { classification_id } });
+    return count;
+}
+
+const countClassificationCorrespondents = async (classification_id: string) => {
+    const count = await ClassificationCorresponding.count({ where: { classification_id } });
+    return count;
+}
+
+const countClassificationCorrespondentsLabelByUser = async (classification_id: string, user_id: string) => {
+    const count = await ClassificationCorrespondingLabel.count({ where: { classification_id, user_id } });
+    return count;
+}
+const countClassificationCorrespondentsLabel = async (classification_id: string) => {
+    const count = await ClassificationCorrespondingLabel.count({ where: { classification_id } });
+    return count;
+}
+
+const countProjectUsers = async (project_id: string) => {
+    const count = await ProjectUser.count({ where: { project_id } });
+    return count;
+}
+const getProject = async (project_id: string): Promise<any> => {
+    const data = await Project.findOne({ where: { id: project_id } });
+    return data;
+}
+
+const getStats = async (classification_id: string, project_id: string, user_id: string) => {
+    const data = {
+        segments_count: await countClassificationSegments(classification_id),
+        correspondents_count: await countClassificationCorrespondents(classification_id),
+        correspondents_labeled_count: await countClassificationCorrespondentsLabel(classification_id),
+        correspondents_labeled_by_user_count: await countClassificationCorrespondentsLabelByUser(classification_id, user_id),
+        project_users_count: await countProjectUsers(project_id),
+        users_per_segment: (await getProject(project_id)).classification_users_per_segment
+    }
+    return data;
+}
+
 // CLASSIFICACAO
-router.get('/', (req: any, res: any) => {
-    Classification.findAll({
-        where: req.params
-    })
-        .then(data => res.json(data))
-        .catch(error => res.status(400).json(error))
+router.get('/', async (req: any, res: any) => {
+    const response = [];
+    try {
+        const data: any = await Classification.findAll({
+            where: req.params
+        });
+        for (const d of data) {
+            response.push({
+                ...d.dataValues,
+                ...(await getStats(d.id, d.project_id, req.body.user_id))
+            })
+        }
+        res.json(response)
+    } catch (error) {
+        res.status(400).json(error)
+    }
 });
+
+router.get('/:id/stats', async (req: any, res: any) => {
+    const response = await getStats(req.params.id, req.params.project_id, req.body.user_id);
+    res.json(response)
+});
+
+
 
 router.post('/', async (req: any, res: any) => {
 
@@ -34,10 +93,12 @@ router.post('/', async (req: any, res: any) => {
 
     if (type === "classification") {
         for (const title in data) {
-            const document = await Classification.create({ ...req.params, ...req.body, ...{ 
-                type, 
-                title: req.body.file.split("-").slice(1).join("-")
-            } });
+            const document = await Classification.create({
+                ...req.params, ...req.body, ...{
+                    type,
+                    title: req.body.file.split("-").slice(1).join("-")
+                }
+            });
             for (const segment of data[title]) {
                 await ClassificationSegment.create({
                     ...req.params,
