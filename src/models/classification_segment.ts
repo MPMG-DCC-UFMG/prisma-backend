@@ -33,6 +33,10 @@ const ClassificationSegment = DbConnector.sequelize().define('classification_seg
         type: DataTypes.TEXT,
         allowNull: true
     },
+    formatted_text: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
     description: {
         type: DataTypes.TEXT,
         allowNull: true

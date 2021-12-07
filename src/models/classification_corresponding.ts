@@ -41,7 +41,14 @@ const ClassificationCorresponding = DbConnector.sequelize().define('classificati
     },
     text: {
         type: DataTypes.TEXT,
-        allowNull: true
+        allowNull: true,
+        get() {
+            try {
+                return JSON.parse(this.getDataValue('text'))
+            } catch {
+                return this.getDataValue('text');
+            }
+        }
     },
     ref_id: {
         type: DataTypes.STRING
@@ -51,17 +58,17 @@ const ClassificationCorresponding = DbConnector.sequelize().define('classificati
         allowNull: false,
         defaultValue: "created"
     }
-    
+
 }, {
-  // Other model options go here
-  paranoid: true
+    // Other model options go here
+    paranoid: true
 });
 
-ClassificationCorresponding.belongsTo(Project, {foreignKey: "project_id"});
-ClassificationSegment.hasMany(ClassificationCorresponding, {foreignKey: {name: "classification_segment_id", allowNull: true}, as: "correspondings"});
+ClassificationCorresponding.belongsTo(Project, { foreignKey: "project_id" });
+ClassificationSegment.hasMany(ClassificationCorresponding, { foreignKey: { name: "classification_segment_id", allowNull: true }, as: "correspondings" });
 
 (async () => {
-    await ClassificationCorresponding.sync({alter: true});
+    await ClassificationCorresponding.sync({ alter: true });
 })();
 
 export default ClassificationCorresponding;

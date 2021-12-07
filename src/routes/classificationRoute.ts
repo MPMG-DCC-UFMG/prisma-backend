@@ -120,6 +120,7 @@ router.post('/', async (req: any, res: any) => {
                 ...{
                     classification_id: document.getDataValue('id'),
                     text: segment.text,
+                    formatted_text: segment.formatted_text,
                     description: segment.description,
                     ref_id: segment._id
                 }
@@ -131,7 +132,7 @@ router.post('/', async (req: any, res: any) => {
                     ...{
                         classification_id: document.getDataValue('id'),
                         classification_segment_id: segmentData.getDataValue('id'),
-                        text: corresponding.text,
+                        text: Array.isArray(corresponding.text) ? JSON.stringify(corresponding.text) : corresponding.text,
                     }
                 });
             }
