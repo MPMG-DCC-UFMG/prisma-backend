@@ -133,6 +133,7 @@ router.post('/', async (req: any, res: any) => {
                         classification_id: document.getDataValue('id'),
                         classification_segment_id: segmentData.getDataValue('id'),
                         text: Array.isArray(corresponding.text) ? JSON.stringify(corresponding.text) : corresponding.text,
+                        ref_id: corresponding._id
                     }
                 });
             }
@@ -185,6 +186,7 @@ router.get('/export', async (req: any, res: any) => {
                 description: segment.description,
                 corresponding: segment.correspondings.map((c: any) => ({
                     text: c.text,
+                    _id: c.ref_id,
                     labels: c.labels.map((label: any) => ({
                         label: {
                             id: label.classification_label.id,
