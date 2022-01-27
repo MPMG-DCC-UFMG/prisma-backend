@@ -133,6 +133,7 @@ router.post('/', async (req: any, res: any) => {
                         classification_id: document.getDataValue('id'),
                         classification_segment_id: segmentData.getDataValue('id'),
                         text: Array.isArray(corresponding.text) ? JSON.stringify(corresponding.text) : corresponding.text,
+                        formatted_text: Array.isArray(corresponding.formatted_text) ? JSON.stringify(corresponding.formatted_text) : corresponding.formatted_text,
                         ref_id: corresponding._id
                     }
                 });

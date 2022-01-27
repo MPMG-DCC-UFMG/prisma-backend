@@ -50,6 +50,17 @@ const ClassificationCorresponding = DbConnector.sequelize().define('classificati
             }
         }
     },
+    formatted_text: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        get() {
+            try {
+                return JSON.parse(this.getDataValue('formatted_text'))
+            } catch {
+                return this.getDataValue('formatted_text');
+            }
+        }
+    },
     ref_id: {
         type: DataTypes.STRING
     },
