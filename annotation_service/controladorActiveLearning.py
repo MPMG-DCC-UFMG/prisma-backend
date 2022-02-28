@@ -90,7 +90,10 @@ class Classification(object):
 		self.jsonFileName = jsonFileName
 		self.model = model
 		self.strategy = strategy
-		self.n_initial = int(n_initial)
+		if int(n_initial) < 10:
+			self.n_initial = 10
+		else:
+			self.n_initial = int(n_initial)
 		self.batch_size = int(batch_size)
 		self.topics = topics
 		self.training = False
@@ -106,11 +109,10 @@ class Classification(object):
 		
 		# Rotulação inicial suficiente para gerar os conjuntos inicial e de teste
 		if self.n_initial*2 <= len(labeled_idx):
-				
+			#aki
 			# Selecionando o conjunto rotulado inicial
 			initial_idx = [labeled_idx[i] for i in np.random.choice(range(len(labeled_idx)), size=self.n_initial, replace=False)]
 			X_initial, y_initial = X[initial_idx], y[initial_idx]
-
 			# Checa a condição necessária de pelo menos duas classes distintas anotadas
 			if len(set(y_initial)) == 1:
 				self.flag_rotulosPendentes = 1
@@ -119,10 +121,17 @@ class Classification(object):
 				# Separando o conjunto de teste
 				test_idx = [i for i in labeled_idx if i not in initial_idx]
 				self.X_test, self.y_test = X[test_idx], y[test_idx]
+                
+                # new
+				X_ref = list()
+				for i in range(len(X)):
+					X_ref.append(i)
+				X_ref = np.array(X_ref)
 
 				# Selecionando o conjunto de treino
-				self.X_pool, self.y_pool = np.delete(X, labeled_idx, axis=0), np.delete(y, labeled_idx, axis=0)
-
+				#self.X_pool, self.y_pool = np.delete(X, labeled_idx, axis=0), np.delete(y, labeled_idx, axis=0)
+				self.X_pool, self.y_pool, self.X_ref_pool = np.delete(X, labeled_idx, axis=0), np.delete(y, labeled_idx, axis=0), np.delete(X_ref, labeled_idx, axis=0)
+                
 				self.learner = ActiveLearner(
 					estimator= self.model,#svm.SVC(probability=True),
 					query_strategy= self.strategy,#uncertainty_sampling,
@@ -154,7 +163,8 @@ class Classification(object):
 				data = {"status": "finished"}
 			else:
 				query_idx, query_inst = self.learner.query(self.X_pool)
-				value = self.X_values[query_idx][0]
+				#value = self.X_values[query_idx][0]
+				value = self.X_values[self.X_ref_pool[query_idx]][0]
 				id = self.X_IDs[query_idx][0]
 				self.dict_ID_idx[id] = query_idx
 				self.dict_ID_inst[id] = query_inst
@@ -166,12 +176,15 @@ class Classification(object):
 			self.training = True
 			if "results" in data:
 				for p in data["results"]:
-					if "id" in p and "topic" in p and "error" in p:
+					if "id" in p and "topic" in p:
+						error = False
+						if "error" in p:
+							error = p["error"]
 						# Caso ainda haja pendência de anotações para gerar grupos inicial e de teste
 						if self.flag_rotulosPendentes or not hasattr(self, "learner"):
 							if p["topic"] != None:
 								self.flag_rotulosPendentes = self.flag_rotulosPendentes - 1
-								self.write_annotation(p["id"], p["topic"], p["error"])
+								self.write_annotation(p["id"], p["topic"], error)
 								if self.flag_rotulosPendentes == 0:
 									self.start()
 						else:
@@ -180,13 +193,14 @@ class Classification(object):
 								query_idx = self.dict_ID_idx[p["id"]]
 
 								if p["topic"] != None:
-									self.write_annotation(p["id"], p["topic"], p["error"])
+									self.write_annotation(p["id"], p["topic"], error)
 									y_new = np.array([p["topic"]], dtype=str)
 									self.learner.teach(query_inst.reshape(1, -1), y_new)
 									self.accuracy_scores.append(self.learner.score(self.X_test, self.y_test))
 								del self.dict_ID_idx[p["id"]]
 								del self.dict_ID_inst[p["id"]]
-								self.X_pool, self.y_pool = np.delete(self.X_pool, query_idx, axis=0), np.delete(self.y_pool, query_idx, axis=0)
+#								self.X_pool, self.y_pool = np.delete(self.X_pool, query_idx, axis=0), np.delete(self.y_pool, query_idx, axis=0)
+								self.X_pool, self.y_pool, self.X_ref_pool = np.delete(self.X_pool, query_idx, axis=0), np.delete(self.y_pool, query_idx, axis=0), np.delete(self.X_ref_pool, query_idx, axis=0)
 
 			self.training = False
 	
@@ -202,7 +216,10 @@ class Classification(object):
 		self.jsonFileName = jsonFileName
 		self.model = model
 		self.strategy = strategy
-		self.n_initial = n_initial
+		if int(n_initial) < 10:
+			self.n_initial = 10
+		else:
+			self.n_initial = int(n_initial)
 		self.batch_size = batch_size
 		self.topics = topics
 		self.start()
@@ -287,23 +304,23 @@ def createModel():
 	
 	if features["model"] not in dict_modelsNames:
 		return Response(
-			"O modelo '" + features["model"] + "' não foi implementado.",
+			"O modelo '" + str(features["model"]) + "' não foi implementado.",
 			status=400,
 		)
 		
 	if features["strategy"] not in dict_strategies:
 		return Response(
-			"A estratégia de seleção '" + features["strategy"] + "' não foi implementada.",
+			"A estratégia de seleção '" + str(features["strategy"]) + "' não foi implementada.",
 			status=400,
 		)
 	
-	if not os.path.exists(PATH_data + features["jsonFileName"]):
+	if not os.path.exists(PATH_data + str(features["jsonFileName"])):
 		return Response(
-			"O arquivo '" + PATH_data + features["jsonFileName"] + "' não exite.",
+			"O arquivo '" + PATH_data + str(features["jsonFileName"]) + "' não exite.",
 			status=400,
 		)
 	
-	c = Classification(str(features["id"]), PATH_data + features["jsonFileName"], dict_modelsNames[features["model"]], dict_strategies[features["strategy"]], features["n_initial"], features["batch_size"], features["topics"], PATH_results)
+	c = Classification(str(features["id"]), PATH_data + str(features["jsonFileName"]), dict_modelsNames[features["model"]], dict_strategies[features["strategy"]], features["n_initial"], features["batch_size"], features["topics"], PATH_results)
 	
 	dump(c, f'models/{features["id"]}.joblib')
 	dict_models[str(features["id"])] = c
