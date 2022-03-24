@@ -35,8 +35,13 @@ export class AnnotationService {
 
     async query(id: string): Promise<any> {
         const url = `${this.URL}query?id=${id}`;
-        const response = await axios.get(url);
-        return response.data;
+        try {
+            const response = await axios.get(url);
+            return response.data;
+        } catch (e) {
+            console.log(e);
+            return null;
+        }
     }
 
     async teach(id: string, ref_id: string, topic: string, error: boolean = false): Promise<string> {
@@ -57,9 +62,14 @@ export class AnnotationService {
     }
 
     async scores(id: string): Promise<number[]> {
-        const url = `${this.URL}scores?id=${id}`;
-        const response = await axios.get<ScoresResponse>(url);
-        return response.data.scores;
+        try {
+            const url = `${this.URL}scores?id=${id}`;
+            const response = await axios.get<ScoresResponse>(url);
+            return response.data.scores;
+        } catch (e) {
+            console.log(e);
+            return [];
+        }
     }
 
 }
