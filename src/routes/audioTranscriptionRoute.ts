@@ -65,11 +65,14 @@ router.get('/export', async (req: any, res: any) => {
             const file = segment.dataValues.file;
             let i = 0;
             zip.file(file.replace(".mp3", ".json"), JSON.stringify(segment.dataValues));
-            zip.file(
-                segment.dataValues.file, 
-                fs.readFileSync(req.body.uploadPath + segment.dataValues.file, {encoding: 'base64'}), 
-                {base64: true}
-            );
+
+            if (fs.existsSync(req.body.uploadPath + segment.dataValues.file)) {
+                zip.file(
+                    segment.dataValues.file,
+                    fs.readFileSync(req.body.uploadPath + segment.dataValues.file, { encoding: 'base64' }),
+                    { base64: true }
+                );
+            }
 
             for (const revision of segment.dataValues.revisions) {
                 let filename = file.replace(".mp3", "");
@@ -82,7 +85,7 @@ router.get('/export', async (req: any, res: any) => {
 
     zip.generateAsync({ type: 'base64' }).then(function (content) {
         res.send({
-            filename: `export-${ new Date().toISOString() }.zip`,
+            filename: `export-${new Date().toISOString()}.zip`,
             data: content
         })
     })
