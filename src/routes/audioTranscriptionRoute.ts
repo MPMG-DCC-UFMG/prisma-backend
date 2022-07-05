@@ -91,7 +91,7 @@ router.get('/export', async (req: any, res: any) => {
     fs.writeFileSync(`public/temp/export-data.zip`, content, {encoding: 'base64'})
     filesToExport.push(`export-data.zip`);
 
-    const pageSize = 100;
+    const pageSize = 500;
     for (let i: number = 0; i < Math.ceil(files.length / pageSize); i++) {
         const f = files.slice(i * pageSize, i * pageSize + pageSize);
 
