@@ -4,8 +4,8 @@ import AudioSegmentRevision from "../models/audio_segment_revision";
 import AudioTranscription from "../models/audio_transcription";
 import User from "../models/user";
 import JSZip from "jszip";
-
 const { exec } = require("child_process");
+var { saveAs } = require('file-saver');
 var fs = require('fs');
 var express = require('express');
 var router = express.Router({ mergeParams: true });
@@ -59,6 +59,7 @@ router.get('/export', async (req: any, res: any) => {
     })
 
     const zip = new JSZip();
+    const files = [];
 
     for (const d of (data as any)) {
         for (const segment of d.dataValues.segments) {
@@ -67,11 +68,10 @@ router.get('/export', async (req: any, res: any) => {
             zip.file(file.replace(".mp3", ".json"), JSON.stringify(segment.dataValues));
 
             if (fs.existsSync(req.body.uploadPath + segment.dataValues.file)) {
-                zip.file(
-                    segment.dataValues.file,
-                    fs.readFileSync(req.body.uploadPath + segment.dataValues.file, { encoding: 'base64' }),
-                    { base64: true }
-                );
+                files.push({
+                    name: segment.dataValues.file,
+                    file: req.body.uploadPath + segment.dataValues.file
+                })
             }
 
             for (const revision of segment.dataValues.revisions) {
@@ -83,12 +83,33 @@ router.get('/export', async (req: any, res: any) => {
         }
     }
 
-    zip.generateAsync({ type: 'base64' }).then(function (content) {
-        res.send({
-            filename: `export-${new Date().toISOString()}.zip`,
-            data: content
-        })
-    })
+    const filesToExport = [];
+    const date = new Date().toISOString();
+
+    const content = await zip.generateAsync({ type: 'base64' });
+    fs.mkdirSync(`public/temp/`, { recursive: true });
+    fs.writeFileSync(`public/temp/export-data.zip`, content, {encoding: 'base64'})
+    filesToExport.push(`export-data.zip`);
+
+    const pageSize = 100;
+    for (let i: number = 0; i < Math.ceil(files.length / pageSize); i++) {
+        const f = files.slice(i * pageSize, i * pageSize + pageSize);
+
+        const zip = new JSZip();
+        for (const item of f) {
+            zip.file(
+                item.name,
+                fs.readFileSync(item.file, { encoding: 'base64' }),
+                { base64: true }
+            );
+        }
+
+        const content = await zip.generateAsync({ type: 'base64' });
+        fs.writeFileSync(`public/temp/export-files-${i + 1}.zip`, content, {encoding: 'base64'})
+        filesToExport.push(`export-files-${i + 1}.zip`);
+    }
+
+    res.send(filesToExport)
 });
 
 router.post('/', async (req: any, res: any) => {
